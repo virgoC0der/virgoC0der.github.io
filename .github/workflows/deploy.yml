@@ -2,7 +2,7 @@ name: Deploy Hugo site to GitHub Pages
 
 on:
   push:
-    branches: [main]  # 你用哪个分支存源码就写哪个（默认是 main）
+    branches: [main]
 
 jobs:
   deploy:
@@ -18,6 +18,7 @@ jobs:
         uses: peaceiris/actions-hugo@v2
         with:
           hugo-version: 'latest'
+          extended: true
 
       - name: 生成静态页面
         run: hugo --minify
