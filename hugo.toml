@@ -1,0 +1,4 @@
+baseURL = 'https://virgoC0der.github.io/'
+languageCode = 'en-us'
+title = 'Billy Blog'
+theme = 'bootstrap'
