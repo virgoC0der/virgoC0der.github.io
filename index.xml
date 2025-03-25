@@ -1,1 +1,55 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Billy's Blog</title><link>https://virgoC0der.github.io/</link><description>Billy's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Mon, 24 Mar 2025 15:56:48 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>First</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>Author</author><guid>https://virgoC0der.github.io/posts/first/</guid><description></description></item></channel></rss>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Billy's Blog</title><link>https://virgoC0der.github.io/</link><description>Billy's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Mon, 24 Mar 2025 15:56:48 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/first/</guid><description><![CDATA[<h2 id="环境准备">环境准备</h2>
+<ol>
+<li>系统要求：
+<ul>
+<li>macOS Monterey 12.3 或更高版本</li>
+<li>至少16GB内存（推荐32GB）</li>
+<li>安装Homebrew包管理器</li>
+</ul>
+</li>
+</ol>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
+        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 安装Homebrew</span>
+</span></span><span class="line"><span class="cl">/bin/bash -c <span class="s2">&#34;</span><span class="k">$(</span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="k">)</span><span class="s2">&#34;</span></span></span></code></pre></div></div>
+<h2 id="安装部署">安装部署</h2>
+<h3 id="1-安装ollama">1. 安装Ollama</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
+        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 通过curl直接安装</span>
+</span></span><span class="line"><span class="cl">curl -fsSL https://ollama.com/install.sh <span class="p">|</span> sh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 启动ollama服务</span>
+</span></span><span class="line"><span class="cl">ollama serve</span></span></code></pre></div></div>
+<h3 id="2-部署open-webui">2. 部署Open WebUI</h3>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
+        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 使用Docker运行webui容器</span>
+</span></span><span class="line"><span class="cl">docker run -d -p 3000:8080 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -v ollama:/root/.ollama <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --name open-webui <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  ghcr.io/open-webui/open-webui:main</span></span></code></pre></div></div>
+<h2 id="模型加载">模型加载</h2>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
+        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 下载llama3模型（根据需求替换模型名称）</span>
+</span></span><span class="line"><span class="cl">ollama pull llama3
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看已安装模型</span>
+</span></span><span class="line"><span class="cl">ollama list</span></span></code></pre></div></div>
+<h2 id="访问验证">访问验证</h2>
+<ol>
+<li>
+<p>打开浏览器访问：</p>]]></description></item></channel></rss>
