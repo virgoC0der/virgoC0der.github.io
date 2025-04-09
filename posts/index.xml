@@ -1,4 +1,42 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>All Posts - Billy's Blog</title><link>https://virgoC0der.github.io/posts/</link><description>All Posts | Billy's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Wed, 09 Apr 2025 15:30:00 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/posts/" rel="self" type="application/rss+xml"/><item><title>Go语言入门指南：从零开始的Go编程之旅</title><link>https://virgoC0der.github.io/posts/golang-beginner-guide/</link><pubDate>Mon, 31 Mar 2025 10:30:00 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/golang-beginner-guide/</guid><description><![CDATA[<h1 id="go语言入门指南从零开始的go编程之旅">Go语言入门指南：从零开始的Go编程之旅</h1>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>All Posts - Billy's Blog</title><link>https://virgoC0der.github.io/posts/</link><description>All Posts | Billy's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Wed, 09 Apr 2025 10:30:00 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/posts/" rel="self" type="application/rss+xml"/><item><title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践</title><link>https://virgoC0der.github.io/posts/go-mcp-claude/</link><pubDate>Wed, 09 Apr 2025 10:30:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/go-mcp-claude/</guid><description><![CDATA[<h2 id="引言">引言</h2>
+<p>人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。</p>
+<h2 id="mcp协议简介">MCP协议简介</h2>
+<p>Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：</p>
+<ul>
+<li>调用外部工具和API</li>
+<li>访问本地系统资源</li>
+<li>执行特定的计算任务</li>
+<li>获取和处理实时数据</li>
+</ul>
+<p>这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。</p>
+<h2 id="go-mcp库介绍">go-mcp库介绍</h2>
+<p><a href="https://github.com/virgoC0der/go-mcp" target="_blank" rel="noopener noreffer ">go-mcp</a>是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。</p>
+<p>该库的主要特点包括：</p>
+<ul>
+<li>完整实现MCP协议规范</li>
+<li>支持HTTP和stdio两种通信方式</li>
+<li>灵活的服务端架构</li>
+<li>内置请求验证和错误处理</li>
+<li>类型安全的API设计</li>
+</ul>
+<h2 id="开发环境准备">开发环境准备</h2>
+<p>在开始开发之前，我们需要准备以下环境：</p>
+<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
+    <div class="code-header language-bash">
+        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
+        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
+        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
+    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 安装Go (确保版本至少为1.18)</span>
+</span></span><span class="line"><span class="cl">brew install go
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 克隆go-mcp仓库</span>
+</span></span><span class="line"><span class="cl">git clone https://github.com/virgoC0der/go-mcp.git
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> go-mcp
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 安装依赖</span>
+</span></span><span class="line"><span class="cl">go mod tidy</span></span></code></pre></div></div>
+<h2 id="实现应用启动器mcp服务">实现应用启动器MCP服务</h2>
+<p>参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。</p>]]></description></item><item><title>Go语言入门指南：从零开始的Go编程之旅</title><link>https://virgoC0der.github.io/posts/golang-beginner-guide/</link><pubDate>Mon, 31 Mar 2025 10:30:00 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/golang-beginner-guide/</guid><description><![CDATA[<h1 id="go语言入门指南从零开始的go编程之旅">Go语言入门指南：从零开始的Go编程之旅</h1>
 <p>Go语言（也称为Golang）是由Google开发的一种静态类型、编译型编程语言，以其简洁的语法、高效的并发处理和强大的标准库而闻名。自2009年发布以来，Go已成为云原生应用、微服务和高性能后端系统的首选语言之一。本文将带领初学者踏上Go语言学习之旅，从环境搭建到基础语法，再到实用示例，全面介绍Go编程的基础知识。</p>
 <h2 id="为什么选择go语言">为什么选择Go语言？</h2>
 <p>在开始学习Go之前，让我们了解为什么Go语言值得学习：</p>
