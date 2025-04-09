@@ -1,6 +1,6 @@
 ---
 title: "使用Go开发MCP并接入Claude Desktop：go-mcp库实践"
-date: 2025-04-09T10:30:00+08:00
+date: 2025-04-08T15:30:00+08:00
 draft: false
 tags: ["Go", "Claude", "MCP", "AI"]
 categories: ["技术"]
