@@ -75,7 +75,7 @@
 └── go.sum</code></pre></div>
 <h2 id="4-实现关键组件">4. 实现关键组件</h2>
 <h3 id="41-配置国际化服务">4.1 配置国际化服务</h3>
-<p>首先，我们来实现本土化服务的核心组件：</p>]]></description></item><item><title>\"使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战\"</title><link>https://virgoC0der.github.io/posts/go-multilingual-localization/</link><pubDate>Thu, 08 May 2025 10:00:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/go-multilingual-localization/</guid><description><![CDATA[<h1 id="使用go实现业务多国本土化策略模式依赖注入与i18n集成实战">使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1>
+<p>首先，我们来实现本土化服务的核心组件：</p>]]></description></item><item><title>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</title><link>https://virgoC0der.github.io/posts/go-multilingual-localization/</link><pubDate>Thu, 08 May 2025 10:00:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/go-multilingual-localization/</guid><description><![CDATA[<h1 id="使用go实现业务多国本土化策略模式依赖注入与i18n集成实战">使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1>
 <p>在当今全球化的商业环境中，将产品和服务本土化以适应不同国家和地区的需求已成为企业扩张的必要步骤。然而，从技术角度来看，实现多国本土化不仅仅是简单的翻译问题，更涉及到如何优雅地处理各国在业务逻辑、法规要求、支付方式等方面的差异。本文将探讨如何使用Go语言构建一个灵活的多国本土化框架，通过策略模式、依赖注入和i18n集成来实现可扩展的国际化应用。</p>
 <h2 id="目录">目录</h2>
 <ol>
