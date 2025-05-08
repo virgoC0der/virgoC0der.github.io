@@ -17,7 +17,7 @@ jobs:
       - name: 安装 Hugo
         uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: '0.145'
+          hugo-version: '0.145.0'
           extended: true
 
       - name: 生成静态页面
