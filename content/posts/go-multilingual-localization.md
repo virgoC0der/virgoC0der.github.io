@@ -1,9 +1,9 @@
 ---
-title: \"使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战\"
+title: "使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战"
 date: 2025-05-08T10:00:00+08:00
 draft: false
-tags: [\"Golang\", \"国际化\", \"i18n\", \"依赖注入\", \"设计模式\"]
-categories: [\"技术\", \"编程\"]
+tags: ["Golang", "国际化", "i18n", "依赖注入", "设计模式"]
+categories: ["技术", "编程"]
 ---
 
 # 使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战
@@ -86,10 +86,10 @@ go get -u golang.org/x/text/language
 package i18n
 
 import (
-	\"fmt\"
-	\"github.com/nicksnyder/go-i18n/v2/i18n\"
-	\"golang.org/x/text/language\"
-	\"github.com/BurntSushi/toml\"
+	"fmt"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
+	"github.com/BurntSushi/toml"
 )
 
 // I18nService 处理应用程序的国际化
@@ -102,13 +102,13 @@ type I18nService struct {
 func NewI18nService(defaultLocale string) (*I18nService, error) {
 	// 创建一个bundle并设置默认语言
 	bundle := i18n.NewBundle(language.MustParse(defaultLocale))
-	bundle.RegisterUnmarshalFunc(\"toml\", toml.Unmarshal)
+	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
 
 	// 加载所有翻译文件
 	// 这里假设所有翻译文件都位于 locales/ 目录下
-	bundle.MustLoadMessageFile(\"locales/en.toml\")
-	bundle.MustLoadMessageFile(\"locales/zh-CN.toml\")
-	bundle.MustLoadMessageFile(\"locales/ja.toml\")
+	bundle.MustLoadMessageFile("locales/en.toml")
+	bundle.MustLoadMessageFile("locales/zh-CN.toml")
+	bundle.MustLoadMessageFile("locales/ja.toml")
 	// 添加更多语言...
 
 	return &I18nService{
@@ -141,19 +141,19 @@ func (s *I18nService) FormatCurrency(amount float64, currency string) string {
 	// 这里可以根据locale实现不同的货币格式化
 	// 简化实现，生产环境应使用更复杂的逻辑
 	switch s.locale.String() {
-	case \"zh-CN\":
-		return \"¥\" + formatNumber(amount)
-	case \"ja\":
-		return \"¥\" + formatNumber(amount)
+	case "zh-CN":
+		return "¥" + formatNumber(amount)
+	case "ja":
+		return "¥" + formatNumber(amount)
 	default:
-		return currency + \" \" + formatNumber(amount)
+		return currency + " " + formatNumber(amount)
 	}
 }
 
 // 辅助函数：格式化数字
 func formatNumber(num float64) string {
 	// 简化实现
-	return fmt.Sprintf(\"%.2f\", num)
+	return fmt.Sprintf("%.2f", num)
 }
 ```
 
@@ -162,31 +162,31 @@ func formatNumber(num float64) string {
 ```toml
 // locales/en.toml
 [welcome]
-description = \"Welcome message\"
-other = \"Welcome to our service\"
+description = "Welcome message"
+other = "Welcome to our service"
 
 [checkout]
-description = \"Checkout button text\"
-other = \"Checkout\"
+description = "Checkout button text"
+other = "Checkout"
 
 [payment_success]
-description = \"Payment success message\"
-other = \"Your payment of {{.Amount}} was successful\"
+description = "Payment success message"
+other = "Your payment of {{.Amount}} was successful"
 ```
 
 ```toml
 // locales/zh-CN.toml
 [welcome]
-description = \"欢迎消息\"
-other = \"欢迎使用我们的服务\"
+description = "欢迎消息"
+other = "欢迎使用我们的服务"
 
 [checkout]
-description = \"结账按钮文本\"
-other = \"去结账\"
+description = "结账按钮文本"
+other = "去结账"
 
 [payment_success]
-description = \"支付成功消息\"
-other = \"您已成功支付 {{.Amount}}\"
+description = "支付成功消息"
+other = "您已成功支付 {{.Amount}}"
 ```
 
 这样，我们就建立了基本的文本国际化框架。接下来，我们将实现业务逻辑的国际化。
@@ -200,7 +200,7 @@ other = \"您已成功支付 {{.Amount}}\"
 package country
 
 import (
-    \"fmt\"
+    "fmt"
 )
 
 // Strategy 定义了一个国家特定的业务策略接口
@@ -232,7 +232,7 @@ func (b *BaseStrategy) GetCountryCode() string {
 
 // 提供默认实现
 func (b *BaseStrategy) GetSupportedPaymentMethods() []string {
-    return []string{\"credit_card\", \"paypal\"}
+    return []string{"credit_card", "paypal"}
 }
 
 func (b *BaseStrategy) CalculateTax(amount float64) float64 {
@@ -242,10 +242,10 @@ func (b *BaseStrategy) CalculateTax(amount float64) float64 {
 
 func (b *BaseStrategy) ValidateAddress(address map[string]string) (bool, error) {
     // 基本地址验证
-    required := []string{\"street\", \"city\", \"postcode\", \"country\"}
+    required := []string{"street", "city", "postcode", "country"}
     for _, field := range required {
         if _, ok := address[field]; !ok {
-            return false, fmt.Errorf(\"missing required field: %s\", field)
+            return false, fmt.Errorf("missing required field: %s", field)
         }
     }
     return true, nil
@@ -271,14 +271,14 @@ type ChinaStrategy struct {
 func NewChinaStrategy() *ChinaStrategy {
     return &ChinaStrategy{
         BaseStrategy: BaseStrategy{
-            CountryCode: \"CN\",
+            CountryCode: "CN",
         },
     }
 }
 
 // GetSupportedPaymentMethods 重写获取支持的支付方式
 func (s *ChinaStrategy) GetSupportedPaymentMethods() []string {
-    return []string{\"alipay\", \"wechat_pay\", \"union_pay\"}
+    return []string{"alipay", "wechat_pay", "union_pay"}
 }
 
 // CalculateTax 根据中国税法计算税费
@@ -295,8 +295,8 @@ func (s *ChinaStrategy) ValidateAddress(address map[string]string) (bool, error)
     }
     
     // 检查中国特定字段
-    if _, ok := address[\"province\"]; !ok {
-        return false, fmt.Errorf(\"missing required field for China: province\")
+    if _, ok := address["province"]; !ok {
+        return false, fmt.Errorf("missing required field for China: province")
     }
     
     // 这里可以添加更多中国特定的地址验证逻辑
@@ -306,9 +306,9 @@ func (s *ChinaStrategy) ValidateAddress(address map[string]string) (bool, error)
 // GetCountrySpecificSettings 获取中国特定设置
 func (s *ChinaStrategy) GetCountrySpecificSettings() map[string]interface{} {
     return map[string]interface{}{
-        \"requires_id_verification\": true,
-        \"max_transaction_amount\":   50000.0,
-        \"currency\":                 \"CNY\",
+        "requires_id_verification": true,
+        "max_transaction_amount":   50000.0,
+        "currency":                 "CNY",
     }
 }
 ```
@@ -326,14 +326,14 @@ type USStrategy struct {
 func NewUSStrategy() *USStrategy {
     return &USStrategy{
         BaseStrategy: BaseStrategy{
-            CountryCode: \"US\",
+            CountryCode: "US",
         },
     }
 }
 
 // GetSupportedPaymentMethods 重写获取支持的支付方式
 func (s *USStrategy) GetSupportedPaymentMethods() []string {
-    return []string{\"credit_card\", \"paypal\", \"apple_pay\", \"google_pay\"}
+    return []string{"credit_card", "paypal", "apple_pay", "google_pay"}
 }
 
 // CalculateTax 根据美国税法计算税费
@@ -350,10 +350,10 @@ func (s *USStrategy) ValidateAddress(address map[string]string) (bool, error) {
     }
     
     // 检查美国特定字段
-    required := []string{\"state\", \"zip\"}
+    required := []string{"state", "zip"}
     for _, field := range required {
         if _, ok := address[field]; !ok {
-            return false, fmt.Errorf(\"missing required field for US: %s\", field)
+            return false, fmt.Errorf("missing required field for US: %s", field)
         }
     }
     
@@ -364,9 +364,9 @@ func (s *USStrategy) ValidateAddress(address map[string]string) (bool, error) {
 // GetCountrySpecificSettings 获取美国特定设置
 func (s *USStrategy) GetCountrySpecificSettings() map[string]interface{} {
     return map[string]interface{}{
-        \"requires_id_verification\": false,
-        \"max_transaction_amount\":   10000.0,
-        \"currency\":                 \"USD\",
+        "requires_id_verification": false,
+        "max_transaction_amount":   10000.0,
+        "currency":                 "USD",
     }
 }
 ```
@@ -382,8 +382,8 @@ func (s *USStrategy) GetCountrySpecificSettings() map[string]interface{} {
 package country
 
 import (
-    \"fmt\"
-    \"sync\"
+    "fmt"
+    "sync"
 )
 
 // Factory 是一个策略工厂，根据国家代码创建适当的策略
@@ -421,7 +421,7 @@ func (f *Factory) GetStrategy(countryCode string) (Strategy, error) {
     
     strategy, exists := f.strategies[countryCode]
     if !exists {
-        return nil, fmt.Errorf(\"no strategy registered for country code: %s\", countryCode)
+        return nil, fmt.Errorf("no strategy registered for country code: %s", countryCode)
     }
     
     return strategy, nil
@@ -460,10 +460,10 @@ go get -u github.com/google/wire/cmd/wire
 package di
 
 import (
-    \"github.com/google/wire\"
-    \"github.com/yourusername/multilingual-service/internal/country\"
-    \"github.com/yourusername/multilingual-service/internal/i18n\"
-    \"github.com/yourusername/multilingual-service/internal/payment\"
+    "github.com/google/wire"
+    "github.com/yourusername/multilingual-service/internal/country"
+    "github.com/yourusername/multilingual-service/internal/i18n"
+    "github.com/yourusername/multilingual-service/internal/payment"
 )
 
 // ServiceContainer 包含应用程序的所有服务
@@ -487,7 +487,7 @@ func InitializeServices(defaultLocale string) (*ServiceContainer, error) {
         payment.NewService,
         
         // 将所有服务组合到容器中
-        wire.Struct(new(ServiceContainer), \"*\"),
+        wire.Struct(new(ServiceContainer), "*"),
     )
     return nil, nil
 }
@@ -510,10 +510,10 @@ go generate ./internal/di
 package payment
 
 import (
-    \"fmt\"
-    \"time\"
-    \"github.com/yourusername/multilingual-service/internal/country\"
-    \"github.com/yourusername/multilingual-service/internal/i18n\"
+    "fmt"
+    "time"
+    "github.com/yourusername/multilingual-service/internal/country"
+    "github.com/yourusername/multilingual-service/internal/i18n"
 )
 
 // CountryStrategyProvider 定义了获取国家策略的接口
@@ -567,7 +567,7 @@ func (s *Service) ProcessPayment(req PaymentRequest) (*PaymentResult, error) {
     if valid, err := strategy.ValidateAddress(req.Address); !valid {
         return &PaymentResult{
             Success: false,
-            Message: fmt.Sprintf(\"Address validation failed: %v\", err),
+            Message: fmt.Sprintf("Address validation failed: %v", err),
         }, nil
     }
     
@@ -584,7 +584,7 @@ func (s *Service) ProcessPayment(req PaymentRequest) (*PaymentResult, error) {
     if !methodSupported {
         return &PaymentResult{
             Success: false,
-            Message: fmt.Sprintf(\"Payment method %s is not supported in %s\", 
+            Message: fmt.Sprintf("Payment method %s is not supported in %s", 
                                  req.PaymentMethod, strategy.GetCountryCode()),
         }, nil
     }
@@ -601,8 +601,8 @@ func (s *Service) ProcessPayment(req PaymentRequest) (*PaymentResult, error) {
     return &PaymentResult{
         Success:      true,
         TransactionID: transactionID,
-        Message:      s.i18nService.Translate(\"payment_success\", map[string]interface{}{
-            \"Amount\": s.i18nService.FormatCurrency(totalAmount, req.Currency),
+        Message:      s.i18nService.Translate("payment_success", map[string]interface{}{
+            "Amount": s.i18nService.FormatCurrency(totalAmount, req.Currency),
         }),
         TotalAmount:  totalAmount,
     }, nil
@@ -611,7 +611,7 @@ func (s *Service) ProcessPayment(req PaymentRequest) (*PaymentResult, error) {
 // 生成交易ID
 func generateTransactionID() string {
     // 简化实现
-    return fmt.Sprintf(\"TX-%d\", time.Now().UnixNano())
+    return fmt.Sprintf("TX-%d", time.Now().UnixNano())
 }
 ```
 
@@ -621,7 +621,7 @@ func generateTransactionID() string {
 // internal/payment/processor.go
 package payment
 
-import \"fmt\"
+import "fmt"
 
 // Processor 定义了支付处理器接口
 type Processor interface {
@@ -639,9 +639,9 @@ func NewProcessorFactory() *ProcessorFactory {
     }
     
     // 注册默认处理器
-    factory.Register(\"alipay\", &AlipayProcessor{})
-    factory.Register(\"wechat_pay\", &WeChatPayProcessor{})
-    factory.Register(\"credit_card\", &CreditCardProcessor{})
+    factory.Register("alipay", &AlipayProcessor{})
+    factory.Register("wechat_pay", &WeChatPayProcessor{})
+    factory.Register("credit_card", &CreditCardProcessor{})
     // 注册更多处理器...
     
     return factory
@@ -654,7 +654,7 @@ func (f *ProcessorFactory) Register(method string, processor Processor) {
 func (f *ProcessorFactory) GetProcessor(method string) (Processor, error) {
     processor, exists := f.processors[method]
     if !exists {
-        return nil, fmt.Errorf(\"no processor registered for method: %s\", method)
+        return nil, fmt.Errorf("no processor registered for method: %s", method)
     }
     return processor, nil
 }
@@ -664,21 +664,21 @@ type AlipayProcessor struct{}
 
 func (p *AlipayProcessor) Process(amount float64, currency string, metadata map[string]interface{}) (string, error) {
     // 实现支付宝支付逻辑
-    return \"alipay-tx-id\", nil
+    return "alipay-tx-id", nil
 }
 
 type WeChatPayProcessor struct{}
 
 func (p *WeChatPayProcessor) Process(amount float64, currency string, metadata map[string]interface{}) (string, error) {
     // 实现微信支付逻辑
-    return \"wechat-tx-id\", nil
+    return "wechat-tx-id", nil
 }
 
 type CreditCardProcessor struct{}
 
 func (p *CreditCardProcessor) Process(amount float64, currency string, metadata map[string]interface{}) (string, error) {
     // 实现信用卡支付逻辑
-    return \"cc-tx-id\", nil
+    return "cc-tx-id", nil
 }
 ```
 
@@ -689,52 +689,52 @@ func (p *CreditCardProcessor) Process(amount float64, currency string, metadata 
 package main
 
 import (
-    \"fmt\"
-    \"log\"
-    \"net/http\"
+    "fmt"
+    "log"
+    "net/http"
     
-    \"github.com/yourusername/multilingual-service/internal/di\"
-    \"github.com/yourusername/multilingual-service/internal/payment\"
+    "github.com/yourusername/multilingual-service/internal/di"
+    "github.com/yourusername/multilingual-service/internal/payment"
 )
 
 func main() {
     // 初始化服务
-    services, err := di.InitializeServices(\"en\")
+    services, err := di.InitializeServices("en")
     if err != nil {
-        log.Fatalf(\"Failed to initialize services: %v\", err)
+        log.Fatalf("Failed to initialize services: %v", err)
     }
     
     // 打印支持的国家
-    fmt.Printf(\"Available countries: %v\
-\", services.CountryFactory.GetAvailableCountries())
+    fmt.Printf("Available countries: %v\
+", services.CountryFactory.GetAvailableCountries())
     
     // 创建一个演示用的支付请求
     paymentReq := payment.PaymentRequest{
-        CountryCode:   \"CN\",
+        CountryCode:   "CN",
         Amount:        100.0,
-        Currency:      \"CNY\",
-        PaymentMethod: \"alipay\",
+        Currency:      "CNY",
+        PaymentMethod: "alipay",
         Address: map[string]string{
-            \"street\":   \"123 Main St\",
-            \"city\":     \"Shanghai\",
-            \"postcode\": \"200000\",
-            \"country\":  \"CN\",
-            \"province\": \"Shanghai\",
+            "street":   "123 Main St",
+            "city":     "Shanghai",
+            "postcode": "200000",
+            "country":  "CN",
+            "province": "Shanghai",
         },
     }
     
     // 处理支付
     result, err := services.PaymentService.ProcessPayment(paymentReq)
     if err != nil {
-        log.Fatalf(\"Payment failed: %v\", err)
+        log.Fatalf("Payment failed: %v", err)
     }
     
-    fmt.Printf(\"Payment result: %+v\
-\", result)
+    fmt.Printf("Payment result: %+v\
+", result)
     
     // 这里可以启动HTTP服务器并提供API
-    http.HandleFunc(\"/api/payment\", handlePayment(services))
-    log.Fatal(http.ListenAndServe(\":8080\", nil))
+    http.HandleFunc("/api/payment", handlePayment(services))
+    log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func handlePayment(services *di.ServiceContainer) http.HandlerFunc {
@@ -753,54 +753,54 @@ func handlePayment(services *di.ServiceContainer) http.HandlerFunc {
 package country_test
 
 import (
-    \"testing\"
+    "testing"
     
-    \"github.com/yourusername/multilingual-service/internal/country\"
+    "github.com/yourusername/multilingual-service/internal/country"
 )
 
 func TestChinaStrategy(t *testing.T) {
     strategy := country.NewChinaStrategy()
     
     // 测试国家代码
-    if code := strategy.GetCountryCode(); code != \"CN\" {
-        t.Errorf(\"Expected country code CN, got %s\", code)
+    if code := strategy.GetCountryCode(); code != "CN" {
+        t.Errorf("Expected country code CN, got %s", code)
     }
     
     // 测试支付方式
     methods := strategy.GetSupportedPaymentMethods()
     if len(methods) != 3 {
-        t.Errorf(\"Expected 3 payment methods, got %d\", len(methods))
+        t.Errorf("Expected 3 payment methods, got %d", len(methods))
     }
     
     // 测试税费计算
     tax := strategy.CalculateTax(100.0)
     if tax != 13.0 {
-        t.Errorf(\"Expected tax 13.0, got %f\", tax)
+        t.Errorf("Expected tax 13.0, got %f", tax)
     }
     
     // 测试地址验证
     validAddress := map[string]string{
-        \"street\":   \"123 Main St\",
-        \"city\":     \"Shanghai\",
-        \"postcode\": \"200000\",
-        \"country\":  \"CN\",
-        \"province\": \"Shanghai\",
+        "street":   "123 Main St",
+        "city":     "Shanghai",
+        "postcode": "200000",
+        "country":  "CN",
+        "province": "Shanghai",
     }
     
     if valid, _ := strategy.ValidateAddress(validAddress); !valid {
-        t.Error(\"Expected valid address validation\")
+        t.Error("Expected valid address validation")
     }
     
     invalidAddress := map[string]string{
-        \"street\":   \"123 Main St\",
-        \"city\":     \"Shanghai\",
-        \"postcode\": \"200000\",
-        \"country\":  \"CN\",
+        "street":   "123 Main St",
+        "city":     "Shanghai",
+        "postcode": "200000",
+        "country":  "CN",
         // 缺少province字段
     }
     
     if valid, _ := strategy.ValidateAddress(invalidAddress); valid {
-        t.Error(\"Expected invalid address validation\")
+        t.Error("Expected invalid address validation")
     }
 }
 ```
