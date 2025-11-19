@@ -1,344 +1,410 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>All Posts - Billy's Blog</title><link>https://virgoC0der.github.io/posts/</link><description>All Posts | Billy's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Thu, 08 May 2025 14:30:00 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/posts/" rel="self" type="application/rss+xml"/><item><title>使用Go实现业务的多国本土化适配方案</title><link>https://virgoC0der.github.io/posts/go-i18n-localization/</link><pubDate>Thu, 08 May 2025 14:30:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/go-i18n-localization/</guid><description><![CDATA[<h1 id="使用go实现业务的多国本土化适配方案">使用Go实现业务的多国本土化适配方案</h1>
-<p>在当今全球化的市场环境中，将产品或服务扩展到不同国家和地区已经成为众多企业的重要战略。然而，这一过程中面临的本土化挑战不容忽视。本文将探讨如何利用Go语言构建一套灵活、高效的多国本土化适配系统，从架构设计到具体实现，全方位解析国际化(i18n)与本土化(l10n)的最佳实践。</p>
-<h2 id="1-理解i18n与l10n的区别">1. 理解i18n与l10n的区别</h2>
-<p>在开始之前，我们需要明确两个概念：</p>
-<ul>
-<li><strong>国际化(Internationalization, i18n)</strong>: 是指设计和开发产品时，使其能够适应不同的语言和地区，而无需进行工程上的修改。</li>
-<li><strong>本土化(Localization, l10n)</strong>: 是指使产品适应特定地区或语言的过程，包括翻译文本、调整日期/时间格式、货币符号等。</li>
-</ul>
-<p>简单来说，国际化是一次性的工程设计，而本土化是针对每个市场的持续适配过程。</p>
-<h2 id="2-go语言的本土化工具生态">2. Go语言的本土化工具生态</h2>
-<p>Go语言有丰富的本土化工具生态系统，以下是几个流行的库：</p>
-<ul>
-<li><a href="https://github.com/nicksnyder/go-i18n" target="_blank" rel="noopener noreffer ">go-i18n</a>：强大的i18n库，支持复数形式和消息格式。</li>
-<li><a href="https://github.com/leonelquinteros/gotext" target="_blank" rel="noopener noreffer ">gotext</a>：Go的gettext支持。</li>
-<li><a href="https://github.com/m1/go-localize" target="_blank" rel="noopener noreffer ">go-localize</a>：简单易用的本土化库。</li>
-<li><a href="https://github.com/projectfluent/fluent-go" target="_blank" rel="noopener noreffer ">fluent</a>：Mozilla的Fluent本土化系统的Go实现。</li>
-</ul>
-<p>在本文中，我们将主要使用<code>go-i18n</code>构建我们的多国本土化系统。</p>
-<h2 id="3-构建多国本土化架构">3. 构建多国本土化架构</h2>
-<h3 id="31-整体架构设计">3.1 整体架构设计</h3>
-<p>一个完善的多国本土化系统应当具备以下特点：</p>
-<ul>
-<li>易于扩展：添加新语言不需要修改代码</li>
-<li>高性能：翻译查找应该是高效的</li>
-<li>灵活性：支持各种本土化需求，从简单文本到复杂内容</li>
-<li>开发友好：对开发人员友好，便于维护</li>
-</ul>
-<p>以下是我们要构建的架构图：</p>
-<div class="code-block code-line-numbers" style="counter-reset: code-block 0">
-    <div class="code-header language-">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><pre tabindex="0"><code>┌─────────────────┐      ┌──────────────────┐
-│ HTTP/API 请求   │─────▶│ 语言检测中间件   │
-└─────────────────┘      └──────────┬───────┘
-                                    │
-                                    ▼
-┌─────────────────┐      ┌──────────────────┐
-│ 翻译文件        │◀────▶│ 本土化服务       │
-│ (JSON/YAML)     │      │                  │
-└─────────────────┘      └──────────┬───────┘
-                                    │
-                                    ▼
-┌─────────────────┐      ┌──────────────────┐
-│ 缓存层          │◀────▶│ 业务逻辑层       │
-└─────────────────┘      └──────────────────┘</code></pre></div>
-<h3 id="32-项目结构">3.2 项目结构</h3>
-<div class="code-block code-line-numbers" style="counter-reset: code-block 0">
-    <div class="code-header language-">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><pre tabindex="0"><code>project/
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Billy's Blog</title><link>https://virgoC0der.github.io/posts/</link><description>Recent content in Posts on Billy's Blog</description><generator>Hugo</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Thu, 08 May 2025 14:30:00 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>使用Go实现业务的多国本土化适配方案</title><link>https://virgoC0der.github.io/posts/go-i18n-localization/</link><pubDate>Thu, 08 May 2025 14:30:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/go-i18n-localization/</guid><description>&lt;h1 id="使用go实现业务的多国本土化适配方案">使用Go实现业务的多国本土化适配方案&lt;/h1>
+&lt;p>在当今全球化的市场环境中，将产品或服务扩展到不同国家和地区已经成为众多企业的重要战略。然而，这一过程中面临的本土化挑战不容忽视。本文将探讨如何利用Go语言构建一套灵活、高效的多国本土化适配系统，从架构设计到具体实现，全方位解析国际化(i18n)与本土化(l10n)的最佳实践。&lt;/p>
+&lt;h2 id="1-理解i18n与l10n的区别">1. 理解i18n与l10n的区别&lt;/h2>
+&lt;p>在开始之前，我们需要明确两个概念：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>国际化(Internationalization, i18n)&lt;/strong>: 是指设计和开发产品时，使其能够适应不同的语言和地区，而无需进行工程上的修改。&lt;/li>
+&lt;li>&lt;strong>本土化(Localization, l10n)&lt;/strong>: 是指使产品适应特定地区或语言的过程，包括翻译文本、调整日期/时间格式、货币符号等。&lt;/li>
+&lt;/ul>
+&lt;p>简单来说，国际化是一次性的工程设计，而本土化是针对每个市场的持续适配过程。&lt;/p>
+&lt;h2 id="2-go语言的本土化工具生态">2. Go语言的本土化工具生态&lt;/h2>
+&lt;p>Go语言有丰富的本土化工具生态系统，以下是几个流行的库：&lt;/p>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/nicksnyder/go-i18n">go-i18n&lt;/a>：强大的i18n库，支持复数形式和消息格式。&lt;/li>
+&lt;li>&lt;a href="https://github.com/leonelquinteros/gotext">gotext&lt;/a>：Go的gettext支持。&lt;/li>
+&lt;li>&lt;a href="https://github.com/m1/go-localize">go-localize&lt;/a>：简单易用的本土化库。&lt;/li>
+&lt;li>&lt;a href="https://github.com/projectfluent/fluent-go">fluent&lt;/a>：Mozilla的Fluent本土化系统的Go实现。&lt;/li>
+&lt;/ul>
+&lt;p>在本文中，我们将主要使用&lt;code>go-i18n&lt;/code>构建我们的多国本土化系统。&lt;/p>
+&lt;h2 id="3-构建多国本土化架构">3. 构建多国本土化架构&lt;/h2>
+&lt;h3 id="31-整体架构设计">3.1 整体架构设计&lt;/h3>
+&lt;p>一个完善的多国本土化系统应当具备以下特点：&lt;/p>
+&lt;ul>
+&lt;li>易于扩展：添加新语言不需要修改代码&lt;/li>
+&lt;li>高性能：翻译查找应该是高效的&lt;/li>
+&lt;li>灵活性：支持各种本土化需求，从简单文本到复杂内容&lt;/li>
+&lt;li>开发友好：对开发人员友好，便于维护&lt;/li>
+&lt;/ul>
+&lt;p>以下是我们要构建的架构图：&lt;/p>
+&lt;pre tabindex="0">&lt;code>┌─────────────────┐ ┌──────────────────┐
+│ HTTP/API 请求 │─────▶│ 语言检测中间件 │
+└─────────────────┘ └──────────┬───────┘
+ │
+ ▼
+┌─────────────────┐ ┌──────────────────┐
+│ 翻译文件 │◀────▶│ 本土化服务 │
+│ (JSON/YAML) │ │ │
+└─────────────────┘ └──────────┬───────┘
+ │
+ ▼
+┌─────────────────┐ ┌──────────────────┐
+│ 缓存层 │◀────▶│ 业务逻辑层 │
+└─────────────────┘ └──────────────────┘
+&lt;/code>&lt;/pre>&lt;h3 id="32-项目结构">3.2 项目结构&lt;/h3>
+&lt;pre tabindex="0">&lt;code>project/
 ├── cmd/
-│   └── server/
-│       └── main.go
+│ └── server/
+│ └── main.go
 ├── internal/
-│   ├── config/
-│   │   └── config.go
-│   ├── handler/
-│   │   └── handler.go
-│   ├── middleware/
-│   │   └── locale.go
-│   ├── model/
-│   │   └── model.go
-│   └── service/
-│       └── localization.go
+│ ├── config/
+│ │ └── config.go
+│ ├── handler/
+│ │ └── handler.go
+│ ├── middleware/
+│ │ └── locale.go
+│ ├── model/
+│ │ └── model.go
+│ └── service/
+│ └── localization.go
 ├── locales/
-│   ├── en.json
-│   ├── zh-CN.json
-│   ├── ja.json
-│   └── ...
+│ ├── en.json
+│ ├── zh-CN.json
+│ ├── ja.json
+│ └── ...
 ├── go.mod
-└── go.sum</code></pre></div>
-<h2 id="4-实现关键组件">4. 实现关键组件</h2>
-<h3 id="41-配置国际化服务">4.1 配置国际化服务</h3>
-<p>首先，我们来实现本土化服务的核心组件：</p>]]></description></item><item><title>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</title><link>https://virgoC0der.github.io/posts/go-multilingual-localization/</link><pubDate>Thu, 08 May 2025 10:00:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/go-multilingual-localization/</guid><description><![CDATA[<h1 id="使用go实现业务多国本土化策略模式依赖注入与i18n集成实战">使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1>
-<p>在当今全球化的商业环境中，将产品和服务本土化以适应不同国家和地区的需求已成为企业扩张的必要步骤。然而，从技术角度来看，实现多国本土化不仅仅是简单的翻译问题，更涉及到如何优雅地处理各国在业务逻辑、法规要求、支付方式等方面的差异。本文将探讨如何使用Go语言构建一个灵活的多国本土化框架，通过策略模式、依赖注入和i18n集成来实现可扩展的国际化应用。</p>
-<h2 id="目录">目录</h2>
-<ol>
-<li><a href="#%e4%b8%9a%e5%8a%a1%e5%9b%bd%e9%99%85%e5%8c%96%e7%9a%84%e6%8c%91%e6%88%98" rel="">业务国际化的挑战</a></li>
-<li><a href="#%e6%80%bb%e4%bd%93%e6%9e%b6%e6%9e%84%e8%ae%be%e8%ae%a1" rel="">总体架构设计</a></li>
-<li><a href="#i18n%e5%ae%9e%e7%8e%b0%e6%96%87%e6%9c%ac%e5%92%8c%e6%b6%88%e6%81%af%e5%9b%bd%e9%99%85%e5%8c%96" rel="">i18n实现：文本和消息国际化</a></li>
-<li><a href="#%e7%ad%96%e7%95%a5%e6%a8%a1%e5%bc%8f%e5%ae%9e%e7%8e%b0%e4%b8%9a%e5%8a%a1%e9%80%bb%e8%be%91%e5%b7%ae%e5%bc%82%e5%8c%96" rel="">策略模式实现业务逻辑差异化</a></li>
-<li><a href="#%e4%bd%bf%e7%94%a8%e5%b7%a5%e5%8e%82%e6%a8%a1%e5%bc%8f%e7%ae%a1%e7%90%86%e5%a4%9a%e5%9b%bd%e7%ad%96%e7%95%a5" rel="">使用工厂模式管理多国策略</a></li>
-<li><a href="#%e4%be%9d%e8%b5%96%e6%b3%a8%e5%85%a5%e4%b8%8ewire%e9%9b%86%e6%88%90" rel="">依赖注入与Wire集成</a></li>
-<li><a href="#%e5%ae%9e%e6%88%98%e6%a1%88%e4%be%8b%e5%9b%bd%e9%99%85%e5%8c%96%e6%94%af%e4%bb%98%e7%b3%bb%e7%bb%9f" rel="">实战案例：国际化支付系统</a></li>
-<li><a href="#%e6%b5%8b%e8%af%95%e4%b8%8e%e7%bb%b4%e6%8a%a4" rel="">测试与维护</a></li>
-<li><a href="#%e6%80%bb%e7%bb%93%e4%b8%8e%e6%9c%80%e4%bd%b3%e5%ae%9e%e8%b7%b5" rel="">总结与最佳实践</a></li>
-</ol>
-<h2 id="业务国际化的挑战">业务国际化的挑战</h2>
-<p>在开始技术实现之前，让我们先明确多国本土化面临的主要挑战：</p>
-<ol>
-<li><strong>语言和文本翻译</strong> - 最基本的国际化需求，涉及UI、错误信息、通知等</li>
-<li><strong>日期、时间和货币格式</strong> - 不同国家有不同的显示偏好</li>
-<li><strong>业务规则差异</strong> - 各国法规、税务、隐私政策可能有很大不同</li>
-<li><strong>支付方式和流程</strong> - 每个国家流行的支付方式往往不同</li>
-<li><strong>地区特定功能</strong> - 某些功能可能只在特定国家可用</li>
-<li><strong>可扩展性</strong> - 系统需要能够轻松添加新的国家或地区支持</li>
-</ol>
-<p>接下来，我们将探讨如何使用Go的各种设计模式和工具来解决这些挑战。</p>
-<h2 id="总体架构设计">总体架构设计</h2>
-<p>我们的多国本土化框架将基于以下核心原则：</p>
-<ol>
-<li><strong>关注点分离</strong> - 将翻译、业务逻辑、配置等分开处理</li>
-<li><strong>策略模式</strong> - 使用接口定义标准行为，每个国家实现自己的策略</li>
-<li><strong>工厂模式</strong> - 根据国家/地区代码创建适当的策略实现</li>
-<li><strong>依赖注入</strong> - 使用Wire自动组装各个组件</li>
-<li><strong>配置驱动</strong> - 使用配置文件管理国家特定设置</li>
-</ol>
-<p>下面是整体架构的简化视图：</p>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><pre tabindex="0"><code>┌───────────────┐      ┌─────────────────┐      ┌───────────────┐
-│               │      │                 │      │               │
-│  国家检测服务  ├─────►│  策略工厂服务   ├─────►│  具体国家策略  │
-│               │      │                 │      │               │
-└───────┬───────┘      └─────────────────┘      └───────┬───────┘
-        │                                                │
-        │                                                │
-        │                                                │
-┌───────▼───────┐      ┌─────────────────┐      ┌───────▼───────┐
-│               │      │                 │      │               │
-│   i18n服务    │◄─────┤    业务服务     ├─────►│   支付服务    │
-│               │      │                 │      │               │
-└───────────────┘      └─────────────────┘      └───────────────┘</code></pre></div>
-<p>接下来，我们将逐一实现这些组件。</p>]]></description></item><item><title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践</title><link>https://virgoC0der.github.io/posts/go-mcp-claude/</link><pubDate>Tue, 08 Apr 2025 15:30:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/go-mcp-claude/</guid><description><![CDATA[<h2 id="引言">引言</h2>
-<p>人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。</p>
-<h2 id="mcp协议简介">MCP协议简介</h2>
-<p>Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：</p>
-<ul>
-<li>调用外部工具和API</li>
-<li>访问本地系统资源</li>
-<li>执行特定的计算任务</li>
-<li>获取和处理实时数据</li>
-</ul>
-<p>这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。</p>
-<h2 id="go-mcp库介绍">go-mcp库介绍</h2>
-<p><a href="https://github.com/virgoC0der/go-mcp" target="_blank" rel="noopener noreffer ">go-mcp</a>是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。</p>
-<p>该库的主要特点包括：</p>
-<ul>
-<li>完整实现MCP协议规范</li>
-<li>支持HTTP和stdio两种通信方式</li>
-<li>灵活的服务端架构</li>
-<li>内置请求验证和错误处理</li>
-<li>类型安全的API设计</li>
-</ul>
-<h2 id="开发环境准备">开发环境准备</h2>
-<p>在开始开发之前，我们需要准备以下环境：</p>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 安装Go (确保版本至少为1.18)</span>
-</span></span><span class="line"><span class="cl">brew install go
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># 克隆go-mcp仓库</span>
-</span></span><span class="line"><span class="cl">git clone https://github.com/virgoC0der/go-mcp.git
-</span></span><span class="line"><span class="cl"><span class="nb">cd</span> go-mcp
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># 安装依赖</span>
-</span></span><span class="line"><span class="cl">go mod tidy</span></span></code></pre></div></div>
-<h2 id="实现应用启动器mcp服务">实现应用启动器MCP服务</h2>
-<p>参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。</p>]]></description></item><item><title>Go语言入门指南：从零开始的Go编程之旅</title><link>https://virgoC0der.github.io/posts/golang-beginner-guide/</link><pubDate>Mon, 31 Mar 2025 10:30:00 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/golang-beginner-guide/</guid><description><![CDATA[<h1 id="go语言入门指南从零开始的go编程之旅">Go语言入门指南：从零开始的Go编程之旅</h1>
-<p>Go语言（也称为Golang）是由Google开发的一种静态类型、编译型编程语言，以其简洁的语法、高效的并发处理和强大的标准库而闻名。自2009年发布以来，Go已成为云原生应用、微服务和高性能后端系统的首选语言之一。本文将带领初学者踏上Go语言学习之旅，从环境搭建到基础语法，再到实用示例，全面介绍Go编程的基础知识。</p>
-<h2 id="为什么选择go语言">为什么选择Go语言？</h2>
-<p>在开始学习Go之前，让我们了解为什么Go语言值得学习：</p>
-<ol>
-<li><strong>简洁易学</strong>：Go的语法简洁明了，学习曲线相对平缓，尤其适合已有其他编程语言经验的开发者</li>
-<li><strong>并发支持</strong>：内置的goroutine和channel使并发编程变得简单而强大</li>
-<li><strong>优秀的性能</strong>：接近C/C++的性能，但具有更高的开发效率</li>
-<li><strong>强大的标准库</strong>：丰富的标准库可以满足大多数常见需求，减少对第三方依赖的需求</li>
-<li><strong>跨平台支持</strong>：支持Windows、macOS、Linux等多种操作系统</li>
-<li><strong>就业机会</strong>：Go在云计算、微服务、DevOps等热门领域应用广泛，就业前景良好</li>
-</ol>
-<h2 id="环境搭建">环境搭建</h2>
-<h3 id="1-安装go">1. 安装Go</h3>
-<p>首先，我们需要在系统上安装Go。访问<a href="https://golang.org/dl/" target="_blank" rel="noopener noreffer ">Go官方下载页面</a>获取适合您系统的安装包。</p>
-<p><strong>macOS安装</strong>:</p>
-<p>使用Homebrew安装：</p>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">brew install go</span></span></code></pre></div></div>
-<p>或使用官方安装包安装。</p>
-<p><strong>Linux安装</strong>:</p>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Ubuntu/Debian</span>
-</span></span><span class="line"><span class="cl">sudo apt-get update
-</span></span><span class="line"><span class="cl">sudo apt-get install golang
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># CentOS/RHEL</span>
-</span></span><span class="line"><span class="cl">sudo yum install golang</span></span></code></pre></div></div>
-<p><strong>Windows安装</strong>:</p>]]></description></item><item><title>Claude+MCP一键生成博客：AI助力内容创作与自动化部署</title><link>https://virgoC0der.github.io/posts/claude-mcp-blog-automation/</link><pubDate>Mon, 31 Mar 2025 10:00:00 +0800</pubDate><author>Billy</author><guid>https://virgoC0der.github.io/posts/claude-mcp-blog-automation/</guid><description><![CDATA[<h1 id="claudemcp一键生成博客ai助力内容创作与自动化部署">Claude+MCP一键生成博客：AI助力内容创作与自动化部署</h1>
-<p>在这个信息爆炸的时代，高效地创建和发布内容已成为许多创作者的迫切需求。今天，我想分享一个结合了AI大语言模型Claude和Model Context Protocol (MCP)的强大工作流，它可以让你以惊人的速度从创意到发布完成整个博客创作过程。</p>
-<h2 id="工作流概述">工作流概述</h2>
-<p>这个一键式博客生成和部署流程包含三个主要步骤：</p>
-<ol>
-<li>使用Claude生成高质量的博客内容并保存为Markdown文件</li>
-<li>通过MCP desktop-commander自动推送到GitHub仓库并触发GitHub Actions</li>
-<li>利用MCP playwright自动检查部署结果</li>
-</ol>
-<p>这个过程完全自动化，从内容创建到部署验证，几乎不需要人工干预。</p>
-<h2 id="配置mcp工具">配置MCP工具</h2>
-<p>要开始使用这个工作流，首先需要在Claude客户端中配置MCP工具。步骤如下：</p>
-<ol>
-<li>打开Claude客户端</li>
-<li>点击Settings -&gt; Developer -&gt; Edit Config</li>
-<li>输入以下配置：</li>
-</ol>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-json">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">  <span class="nt">&#34;mcpServers&#34;</span><span class="p">:</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&#34;fileSystme&#34;</span><span class="p">:</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;npx&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">      <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">[</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;-y&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;@modelcontextprotocol/server-filesystem&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;YOUR PATH&#34;</span>
-</span></span><span class="line"><span class="cl">      <span class="p">]</span>
-</span></span><span class="line"><span class="cl">    <span class="p">},</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&#34;playwright&#34;</span><span class="p">:</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;npx&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">      <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">[</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;@playwright/mcp@latest&#34;</span>
-</span></span><span class="line"><span class="cl">      <span class="p">]</span>
-</span></span><span class="line"><span class="cl">    <span class="p">},</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&#34;desktop-commander&#34;</span><span class="p">:</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;npx&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">      <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">[</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;-y&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;@smithery/cli@latest&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;run&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;@wonderwhy-er/desktop-commander&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;--key&#34;</span><span class="p">,</span>
-</span></span><span class="line"><span class="cl">        <span class="s2">&#34;YOUR PERSONAL KEY&#34;</span>
-</span></span><span class="line"><span class="cl">      <span class="p">]</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div></div>
-<p>这个配置告诉Claude如何与三个关键MCP工具通信：</p>]]></description></item><item><title>使用Docker构建高效的Golang开发环境：完整指南</title><link>https://virgoC0der.github.io/posts/golang-docker/</link><pubDate>Thu, 27 Mar 2025 11:32:53 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/golang-docker/</guid><description><![CDATA[<h1 id="使用docker构建高效的golang开发环境完整指南">使用Docker构建高效的Golang开发环境：完整指南</h1>
-<p>在现代软件开发中，保持开发环境的一致性和可复制性至关重要。无论是团队协作还是个人项目，环境差异常常导致&quot;在我的机器上能运行&quot;的问题。Docker作为容器化技术的代表，为解决这一问题提供了优雅的解决方案。本文将详细介绍如何使用Docker构建一个高效的Golang开发环境，包括多阶段构建、热重载和最佳实践。</p>
-<h2 id="为什么选择docker--golang">为什么选择Docker + Golang？</h2>
-<p>Golang和Docker的组合有着天然的契合性：</p>
-<ol>
-<li><strong>轻量级</strong>：Go编译后的二进制文件体积小，启动快，非常适合容器化部署</li>
-<li><strong>跨平台</strong>：通过Docker容器，可以在任何支持Docker的平台上获得一致的开发体验</li>
-<li><strong>依赖管理</strong>：容器化环境避免了&quot;依赖地狱&quot;问题，确保所有开发者使用相同的依赖版本</li>
-<li><strong>隔离性</strong>：开发环境与主机系统隔离，避免污染本地环境</li>
-<li><strong>CI/CD友好</strong>：容器化的开发环境可以无缝集成到CI/CD流程中</li>
-</ol>
-<h2 id="环境准备">环境准备</h2>
-<p>在开始之前，请确保您的系统已安装以下软件：</p>
-<ul>
-<li>Docker（<a href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener noreffer ">安装指南</a>）</li>
-<li>Docker Compose（<a href="https://docs.docker.com/compose/install/" target="_blank" rel="noopener noreffer ">安装指南</a>）</li>
-<li>Git（<a href="https://git-scm.com/downloads" target="_blank" rel="noopener noreffer ">安装指南</a>）</li>
-</ul>
-<h2 id="项目结构">项目结构</h2>
-<p>我们将创建一个具有以下结构的项目：</p>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><pre tabindex="0"><code>docker-golang-dev/
-├── .air.toml              # Air 热重载配置文件
-├── Dockerfile             # 多阶段构建的 Dockerfile
-├── docker-compose.yml     # Docker Compose 配置文件
-├── go.mod                 # Go 模块定义
-├── go.sum                 # Go 模块校验和
-└── src/                   # Go 源代码目录
-    └── main.go            # 示例应用程序</code></pre></div>
-<h2 id="步骤一创建基础项目结构">步骤一：创建基础项目结构</h2>
-<p>首先，让我们创建项目目录并初始化Go模块：</p>]]></description></item><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/first/</guid><description><![CDATA[<h2 id="环境准备">环境准备</h2>
-<ol>
-<li>系统要求：
-<ul>
-<li>macOS Monterey 12.3 或更高版本</li>
-<li>至少16GB内存（推荐32GB）</li>
-<li>安装Homebrew包管理器</li>
-</ul>
-</li>
-</ol>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 安装Homebrew</span>
-</span></span><span class="line"><span class="cl">/bin/bash -c <span class="s2">&#34;</span><span class="k">$(</span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="k">)</span><span class="s2">&#34;</span></span></span></code></pre></div></div>
-<h2 id="安装部署">安装部署</h2>
-<h3 id="1-安装ollama">1. 安装Ollama</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 通过curl直接安装</span>
-</span></span><span class="line"><span class="cl">curl -fsSL https://ollama.com/install.sh <span class="p">|</span> sh
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># 启动ollama服务</span>
-</span></span><span class="line"><span class="cl">ollama serve</span></span></code></pre></div></div>
-<h3 id="2-部署open-webui">2. 部署Open WebUI</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 使用Docker运行webui容器</span>
-</span></span><span class="line"><span class="cl">docker run -d -p 3000:8080 <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -v ollama:/root/.ollama <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --name open-webui <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  ghcr.io/open-webui/open-webui:main</span></span></code></pre></div></div>
-<h2 id="模型加载">模型加载</h2>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 下载llama3模型（根据需求替换模型名称）</span>
-</span></span><span class="line"><span class="cl">ollama pull llama3
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># 查看已安装模型</span>
-</span></span><span class="line"><span class="cl">ollama list</span></span></code></pre></div></div>
-<h2 id="访问验证">访问验证</h2>
-<ol>
-<li>
-<p>打开浏览器访问：</p>]]></description></item></channel></rss>
+└── go.sum
+&lt;/code>&lt;/pre>&lt;h2 id="4-实现关键组件">4. 实现关键组件&lt;/h2>
+&lt;h3 id="41-配置国际化服务">4.1 配置国际化服务&lt;/h3>
+&lt;p>首先，我们来实现本土化服务的核心组件：&lt;/p></description></item><item><title>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</title><link>https://virgoC0der.github.io/posts/go-multilingual-localization/</link><pubDate>Thu, 08 May 2025 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/go-multilingual-localization/</guid><description>&lt;h1 id="使用go实现业务多国本土化策略模式依赖注入与i18n集成实战">使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战&lt;/h1>
+&lt;p>在当今全球化的商业环境中，将产品和服务本土化以适应不同国家和地区的需求已成为企业扩张的必要步骤。然而，从技术角度来看，实现多国本土化不仅仅是简单的翻译问题，更涉及到如何优雅地处理各国在业务逻辑、法规要求、支付方式等方面的差异。本文将探讨如何使用Go语言构建一个灵活的多国本土化框架，通过策略模式、依赖注入和i18n集成来实现可扩展的国际化应用。&lt;/p>
+&lt;h2 id="目录">目录&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="#%E4%B8%9A%E5%8A%A1%E5%9B%BD%E9%99%85%E5%8C%96%E7%9A%84%E6%8C%91%E6%88%98">业务国际化的挑战&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1">总体架构设计&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#i18n%E5%AE%9E%E7%8E%B0%E6%96%87%E6%9C%AC%E5%92%8C%E6%B6%88%E6%81%AF%E5%9B%BD%E9%99%85%E5%8C%96">i18n实现：文本和消息国际化&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F%E5%AE%9E%E7%8E%B0%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%B7%AE%E5%BC%82%E5%8C%96">策略模式实现业务逻辑差异化&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E4%BD%BF%E7%94%A8%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F%E7%AE%A1%E7%90%86%E5%A4%9A%E5%9B%BD%E7%AD%96%E7%95%A5">使用工厂模式管理多国策略&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E4%B8%8Ewire%E9%9B%86%E6%88%90">依赖注入与Wire集成&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E5%9B%BD%E9%99%85%E5%8C%96%E6%94%AF%E4%BB%98%E7%B3%BB%E7%BB%9F">实战案例：国际化支付系统&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E7%BB%B4%E6%8A%A4">测试与维护&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#%E6%80%BB%E7%BB%93%E4%B8%8E%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5">总结与最佳实践&lt;/a>&lt;/li>
+&lt;/ol>
+&lt;h2 id="业务国际化的挑战">业务国际化的挑战&lt;/h2>
+&lt;p>在开始技术实现之前，让我们先明确多国本土化面临的主要挑战：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>语言和文本翻译&lt;/strong> - 最基本的国际化需求，涉及UI、错误信息、通知等&lt;/li>
+&lt;li>&lt;strong>日期、时间和货币格式&lt;/strong> - 不同国家有不同的显示偏好&lt;/li>
+&lt;li>&lt;strong>业务规则差异&lt;/strong> - 各国法规、税务、隐私政策可能有很大不同&lt;/li>
+&lt;li>&lt;strong>支付方式和流程&lt;/strong> - 每个国家流行的支付方式往往不同&lt;/li>
+&lt;li>&lt;strong>地区特定功能&lt;/strong> - 某些功能可能只在特定国家可用&lt;/li>
+&lt;li>&lt;strong>可扩展性&lt;/strong> - 系统需要能够轻松添加新的国家或地区支持&lt;/li>
+&lt;/ol>
+&lt;p>接下来，我们将探讨如何使用Go的各种设计模式和工具来解决这些挑战。&lt;/p>
+&lt;h2 id="总体架构设计">总体架构设计&lt;/h2>
+&lt;p>我们的多国本土化框架将基于以下核心原则：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>关注点分离&lt;/strong> - 将翻译、业务逻辑、配置等分开处理&lt;/li>
+&lt;li>&lt;strong>策略模式&lt;/strong> - 使用接口定义标准行为，每个国家实现自己的策略&lt;/li>
+&lt;li>&lt;strong>工厂模式&lt;/strong> - 根据国家/地区代码创建适当的策略实现&lt;/li>
+&lt;li>&lt;strong>依赖注入&lt;/strong> - 使用Wire自动组装各个组件&lt;/li>
+&lt;li>&lt;strong>配置驱动&lt;/strong> - 使用配置文件管理国家特定设置&lt;/li>
+&lt;/ol>
+&lt;p>下面是整体架构的简化视图：&lt;/p>
+&lt;pre tabindex="0">&lt;code>┌───────────────┐ ┌─────────────────┐ ┌───────────────┐
+│ │ │ │ │ │
+│ 国家检测服务 ├─────►│ 策略工厂服务 ├─────►│ 具体国家策略 │
+│ │ │ │ │ │
+└───────┬───────┘ └─────────────────┘ └───────┬───────┘
+ │ │
+ │ │
+ │ │
+┌───────▼───────┐ ┌─────────────────┐ ┌───────▼───────┐
+│ │ │ │ │ │
+│ i18n服务 │◄─────┤ 业务服务 ├─────►│ 支付服务 │
+│ │ │ │ │ │
+└───────────────┘ └─────────────────┘ └───────────────┘
+&lt;/code>&lt;/pre>&lt;p>接下来，我们将逐一实现这些组件。&lt;/p></description></item><item><title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践</title><link>https://virgoC0der.github.io/posts/go-mcp-claude/</link><pubDate>Tue, 08 Apr 2025 15:30:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/go-mcp-claude/</guid><description>&lt;h2 id="引言">引言&lt;/h2>
+&lt;p>人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。&lt;/p>
+&lt;h2 id="mcp协议简介">MCP协议简介&lt;/h2>
+&lt;p>Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：&lt;/p>
+&lt;ul>
+&lt;li>调用外部工具和API&lt;/li>
+&lt;li>访问本地系统资源&lt;/li>
+&lt;li>执行特定的计算任务&lt;/li>
+&lt;li>获取和处理实时数据&lt;/li>
+&lt;/ul>
+&lt;p>这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。&lt;/p>
+&lt;h2 id="go-mcp库介绍">go-mcp库介绍&lt;/h2>
+&lt;p>&lt;a href="https://github.com/virgoC0der/go-mcp">go-mcp&lt;/a>是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。&lt;/p>
+&lt;p>该库的主要特点包括：&lt;/p>
+&lt;ul>
+&lt;li>完整实现MCP协议规范&lt;/li>
+&lt;li>支持HTTP和stdio两种通信方式&lt;/li>
+&lt;li>灵活的服务端架构&lt;/li>
+&lt;li>内置请求验证和错误处理&lt;/li>
+&lt;li>类型安全的API设计&lt;/li>
+&lt;/ul>
+&lt;h2 id="开发环境准备">开发环境准备&lt;/h2>
+&lt;p>在开始开发之前，我们需要准备以下环境：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装Go (确保版本至少为1.18)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>brew install go
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 克隆go-mcp仓库&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>git clone https://github.com/virgoC0der/go-mcp.git
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd go-mcp
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装依赖&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod tidy
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="实现应用启动器mcp服务">实现应用启动器MCP服务&lt;/h2>
+&lt;p>参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。&lt;/p>
+&lt;h3 id="1-创建项目结构">1. 创建项目结构&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir claude-app-launcher
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd claude-app-launcher
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/claude-app-launcher
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="2-实现服务结构">2. 实现服务结构&lt;/h3>
+&lt;p>首先，让我们实现一个满足MCP协议要求的服务结构：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;context&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;encoding/json&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;log&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;os&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;os/exec&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;os/signal&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;runtime&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;sync&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;syscall&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;github.com/virgoC0der/go-mcp&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;github.com/virgoC0der/go-mcp/internal/types&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;github.com/virgoC0der/go-mcp/transport&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// AppLauncherServer implements the MCP service interface&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">AppLauncherServer&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">prompts&lt;/span> []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Prompt&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">tools&lt;/span> []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Tool&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">resources&lt;/span> []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Resource&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// NewAppLauncherServer creates a new app launcher server instance&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">NewAppLauncherServer&lt;/span>() &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">AppLauncherServer&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">s&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">AppLauncherServer&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#75715e">// 定义支持的提示&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">prompts&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Prompt&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;openApp&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Open a macOS application&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Arguments&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">PromptArgument&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;appName&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Name of the application to open&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#a6e22e">Required&lt;/span>: &lt;span style="color:#66d9ef">true&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#75715e">// 定义支持的工具&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">tools&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Tool&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;openApp&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Open a macOS application&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">InputSchema&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#e6db74">&amp;#34;type&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;object&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#e6db74">&amp;#34;properties&amp;#34;&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#e6db74">&amp;#34;appName&amp;#34;&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>							&lt;span style="color:#e6db74">&amp;#34;type&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;string&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>							&lt;span style="color:#e6db74">&amp;#34;description&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Name of the application to open&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#e6db74">&amp;#34;required&amp;#34;&lt;/span>: []&lt;span style="color:#66d9ef">string&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;appName&amp;#34;&lt;/span>},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#75715e">// 定义支持的资源&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">resources&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Resource&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">URI&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;apps&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;apps&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;List of common macOS applications&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">MimeType&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;application/json&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">s&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="3-实现服务接口方法">3. 实现服务接口方法&lt;/h3>
+&lt;p>接下来，我们需要实现MCP服务接口所需的各种方法：&lt;/p></description></item><item><title>Go语言入门指南：从零开始的Go编程之旅</title><link>https://virgoC0der.github.io/posts/golang-beginner-guide/</link><pubDate>Mon, 31 Mar 2025 10:30:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/golang-beginner-guide/</guid><description>&lt;h1 id="go语言入门指南从零开始的go编程之旅">Go语言入门指南：从零开始的Go编程之旅&lt;/h1>
+&lt;p>Go语言（也称为Golang）是由Google开发的一种静态类型、编译型编程语言，以其简洁的语法、高效的并发处理和强大的标准库而闻名。自2009年发布以来，Go已成为云原生应用、微服务和高性能后端系统的首选语言之一。本文将带领初学者踏上Go语言学习之旅，从环境搭建到基础语法，再到实用示例，全面介绍Go编程的基础知识。&lt;/p>
+&lt;h2 id="为什么选择go语言">为什么选择Go语言？&lt;/h2>
+&lt;p>在开始学习Go之前，让我们了解为什么Go语言值得学习：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>简洁易学&lt;/strong>：Go的语法简洁明了，学习曲线相对平缓，尤其适合已有其他编程语言经验的开发者&lt;/li>
+&lt;li>&lt;strong>并发支持&lt;/strong>：内置的goroutine和channel使并发编程变得简单而强大&lt;/li>
+&lt;li>&lt;strong>优秀的性能&lt;/strong>：接近C/C++的性能，但具有更高的开发效率&lt;/li>
+&lt;li>&lt;strong>强大的标准库&lt;/strong>：丰富的标准库可以满足大多数常见需求，减少对第三方依赖的需求&lt;/li>
+&lt;li>&lt;strong>跨平台支持&lt;/strong>：支持Windows、macOS、Linux等多种操作系统&lt;/li>
+&lt;li>&lt;strong>就业机会&lt;/strong>：Go在云计算、微服务、DevOps等热门领域应用广泛，就业前景良好&lt;/li>
+&lt;/ol>
+&lt;h2 id="环境搭建">环境搭建&lt;/h2>
+&lt;h3 id="1-安装go">1. 安装Go&lt;/h3>
+&lt;p>首先，我们需要在系统上安装Go。访问&lt;a href="https://golang.org/dl/">Go官方下载页面&lt;/a>获取适合您系统的安装包。&lt;/p>
+&lt;p>&lt;strong>macOS安装&lt;/strong>:&lt;/p>
+&lt;p>使用Homebrew安装：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>brew install go
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>或使用官方安装包安装。&lt;/p>
+&lt;p>&lt;strong>Linux安装&lt;/strong>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Ubuntu/Debian&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo apt-get update
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo apt-get install golang
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># CentOS/RHEL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo yum install golang
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;strong>Windows安装&lt;/strong>:&lt;/p>
+&lt;p>下载并运行MSI安装程序，按照向导完成安装。&lt;/p>
+&lt;h3 id="2-验证安装">2. 验证安装&lt;/h3>
+&lt;p>安装完成后，打开终端/命令提示符，运行以下命令验证安装：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>go version
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>您应该看到类似以下的输出：&lt;/p>
+&lt;pre tabindex="0">&lt;code>go version go1.22.1 darwin/amd64
+&lt;/code>&lt;/pre>&lt;h3 id="3-配置工作区">3. 配置工作区&lt;/h3>
+&lt;p>Go 1.13及更高版本支持模块化开发，使得工作目录配置变得更加简单。但了解一下基本的GOPATH结构依然有所裨益：&lt;/p>
+&lt;pre tabindex="0">&lt;code>GOPATH/
+├── bin/ # 编译后的可执行文件
+├── pkg/ # 编译后的包文件
+└── src/ # 源代码
+&lt;/code>&lt;/pre>&lt;p>现代Go项目通常使用Go Modules来管理依赖：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 创建新项目目录&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>mkdir -p ~/projects/my-go-app
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd ~/projects/my-go-app
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 初始化Go模块&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/my-go-app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="go语言基础">Go语言基础&lt;/h2>
+&lt;h3 id="1-第一个go程序">1. 第一个Go程序&lt;/h3>
+&lt;p>让我们从经典的&amp;quot;Hello, World!&amp;ldquo;程序开始：&lt;/p></description></item><item><title>Claude+MCP一键生成博客：AI助力内容创作与自动化部署</title><link>https://virgoC0der.github.io/posts/claude-mcp-blog-automation/</link><pubDate>Mon, 31 Mar 2025 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/claude-mcp-blog-automation/</guid><description>&lt;h1 id="claudemcp一键生成博客ai助力内容创作与自动化部署">Claude+MCP一键生成博客：AI助力内容创作与自动化部署&lt;/h1>
+&lt;p>在这个信息爆炸的时代，高效地创建和发布内容已成为许多创作者的迫切需求。今天，我想分享一个结合了AI大语言模型Claude和Model Context Protocol (MCP)的强大工作流，它可以让你以惊人的速度从创意到发布完成整个博客创作过程。&lt;/p>
+&lt;h2 id="工作流概述">工作流概述&lt;/h2>
+&lt;p>这个一键式博客生成和部署流程包含三个主要步骤：&lt;/p>
+&lt;ol>
+&lt;li>使用Claude生成高质量的博客内容并保存为Markdown文件&lt;/li>
+&lt;li>通过MCP desktop-commander自动推送到GitHub仓库并触发GitHub Actions&lt;/li>
+&lt;li>利用MCP playwright自动检查部署结果&lt;/li>
+&lt;/ol>
+&lt;p>这个过程完全自动化，从内容创建到部署验证，几乎不需要人工干预。&lt;/p>
+&lt;h2 id="配置mcp工具">配置MCP工具&lt;/h2>
+&lt;p>要开始使用这个工作流，首先需要在Claude客户端中配置MCP工具。步骤如下：&lt;/p>
+&lt;ol>
+&lt;li>打开Claude客户端&lt;/li>
+&lt;li>点击Settings -&amp;gt; Developer -&amp;gt; Edit Config&lt;/li>
+&lt;li>输入以下配置：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;mcpServers&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;fileSystme&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;npx&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;args&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;-y&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@modelcontextprotocol/server-filesystem&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;YOUR PATH&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;playwright&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;npx&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;args&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@playwright/mcp@latest&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;desktop-commander&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;npx&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;args&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;-y&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@smithery/cli@latest&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;run&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@wonderwhy-er/desktop-commander&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;--key&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;YOUR PERSONAL KEY&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>这个配置告诉Claude如何与三个关键MCP工具通信：&lt;/p></description></item><item><title>使用Docker构建高效的Golang开发环境：完整指南</title><link>https://virgoC0der.github.io/posts/golang-docker/</link><pubDate>Thu, 27 Mar 2025 11:32:53 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/golang-docker/</guid><description>&lt;h1 id="使用docker构建高效的golang开发环境完整指南">使用Docker构建高效的Golang开发环境：完整指南&lt;/h1>
+&lt;p>在现代软件开发中，保持开发环境的一致性和可复制性至关重要。无论是团队协作还是个人项目，环境差异常常导致&amp;quot;在我的机器上能运行&amp;quot;的问题。Docker作为容器化技术的代表，为解决这一问题提供了优雅的解决方案。本文将详细介绍如何使用Docker构建一个高效的Golang开发环境，包括多阶段构建、热重载和最佳实践。&lt;/p>
+&lt;h2 id="为什么选择docker--golang">为什么选择Docker + Golang？&lt;/h2>
+&lt;p>Golang和Docker的组合有着天然的契合性：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>轻量级&lt;/strong>：Go编译后的二进制文件体积小，启动快，非常适合容器化部署&lt;/li>
+&lt;li>&lt;strong>跨平台&lt;/strong>：通过Docker容器，可以在任何支持Docker的平台上获得一致的开发体验&lt;/li>
+&lt;li>&lt;strong>依赖管理&lt;/strong>：容器化环境避免了&amp;quot;依赖地狱&amp;quot;问题，确保所有开发者使用相同的依赖版本&lt;/li>
+&lt;li>&lt;strong>隔离性&lt;/strong>：开发环境与主机系统隔离，避免污染本地环境&lt;/li>
+&lt;li>&lt;strong>CI/CD友好&lt;/strong>：容器化的开发环境可以无缝集成到CI/CD流程中&lt;/li>
+&lt;/ol>
+&lt;h2 id="环境准备">环境准备&lt;/h2>
+&lt;p>在开始之前，请确保您的系统已安装以下软件：&lt;/p>
+&lt;ul>
+&lt;li>Docker（&lt;a href="https://docs.docker.com/get-docker/">安装指南&lt;/a>）&lt;/li>
+&lt;li>Docker Compose（&lt;a href="https://docs.docker.com/compose/install/">安装指南&lt;/a>）&lt;/li>
+&lt;li>Git（&lt;a href="https://git-scm.com/downloads">安装指南&lt;/a>）&lt;/li>
+&lt;/ul>
+&lt;h2 id="项目结构">项目结构&lt;/h2>
+&lt;p>我们将创建一个具有以下结构的项目：&lt;/p>
+&lt;pre tabindex="0">&lt;code>docker-golang-dev/
+├── .air.toml # Air 热重载配置文件
+├── Dockerfile # 多阶段构建的 Dockerfile
+├── docker-compose.yml # Docker Compose 配置文件
+├── go.mod # Go 模块定义
+├── go.sum # Go 模块校验和
+└── src/ # Go 源代码目录
+ └── main.go # 示例应用程序
+&lt;/code>&lt;/pre>&lt;h2 id="步骤一创建基础项目结构">步骤一：创建基础项目结构&lt;/h2>
+&lt;p>首先，让我们创建项目目录并初始化Go模块：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir -p docker-golang-dev/src
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd docker-golang-dev
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/docker-golang-dev
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>touch go.sum
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="步骤二编写dockerfile">步骤二：编写Dockerfile&lt;/h2>
+&lt;p>Dockerfile是构建Docker镜像的核心配置文件。我们将使用多阶段构建来优化镜像大小和构建过程。&lt;/p>
+&lt;p>创建&lt;code>Dockerfile&lt;/code>文件，内容如下：&lt;/p></description></item><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/first/</guid><description>&lt;h2 id="环境准备">环境准备&lt;/h2>
+&lt;ol>
+&lt;li>系统要求：
+&lt;ul>
+&lt;li>macOS Monterey 12.3 或更高版本&lt;/li>
+&lt;li>至少16GB内存（推荐32GB）&lt;/li>
+&lt;li>安装Homebrew包管理器&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装Homebrew&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/bin/bash -c &lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#66d9ef">$(&lt;/span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh&lt;span style="color:#66d9ef">)&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="安装部署">安装部署&lt;/h2>
+&lt;h3 id="1-安装ollama">1. 安装Ollama&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 通过curl直接安装&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>curl -fsSL https://ollama.com/install.sh | sh
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 启动ollama服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama serve
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="2-部署open-webui">2. 部署Open WebUI&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用Docker运行webui容器&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>docker run -d -p 3000:8080 &lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> -v ollama:/root/.ollama &lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> --name open-webui &lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> ghcr.io/open-webui/open-webui:main
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="模型加载">模型加载&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载llama3模型（根据需求替换模型名称）&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama pull llama3
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 查看已安装模型&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama list
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="访问验证">访问验证&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>打开浏览器访问：&lt;/p>
+&lt;ul>
+&lt;li>Ollama管理界面：http://localhost:11434&lt;/li>
+&lt;li>WebUI界面：http://localhost:3000&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>在WebUI界面选择模型即可开始对话&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="注意事项">注意事项&lt;/h2>
+&lt;ol>
+&lt;li>确保3000/11434端口未被占用&lt;/li>
+&lt;li>首次下载模型需要较长时间（取决于网络环境）&lt;/li>
+&lt;li>建议配合Ngrok实现内网穿透&lt;/li>
+&lt;li>使用GPU加速需要额外配置Metal后端&lt;/li>
+&lt;/ol></description></item></channel></rss>

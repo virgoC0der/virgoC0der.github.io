@@ -1,553 +1,524 @@
-<!doctype html><html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践 - Billy's Blog</title><meta name=Description content="Billy's Blog"><meta property="og:url" content="https://virgoC0der.github.io/posts/go-mcp-claude/">
-<meta property="og:site_name" content="Billy's Blog"><meta property="og:title" content="使用Go开发MCP并接入Claude Desktop：go-mcp库实践"><meta property="og:description" content="引言 人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。
-MCP协议简介 Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：
-调用外部工具和API 访问本地系统资源 执行特定的计算任务 获取和处理实时数据 这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。
-go-mcp库介绍 go-mcp是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。
-该库的主要特点包括：
-完整实现MCP协议规范 支持HTTP和stdio两种通信方式 灵活的服务端架构 内置请求验证和错误处理 类型安全的API设计 开发环境准备 在开始开发之前，我们需要准备以下环境：
-# 安装Go (确保版本至少为1.18) brew install go # 克隆go-mcp仓库 git clone https://github.com/virgoC0der/go-mcp.git cd go-mcp # 安装依赖 go mod tidy 实现应用启动器MCP服务 参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。"><meta property="og:locale" content="zh_CN"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2025-04-08T15:30:00+08:00"><meta property="article:modified_time" content="2025-04-08T15:30:00+08:00"><meta property="article:tag" content="Go"><meta property="article:tag" content="Claude"><meta property="article:tag" content="MCP"><meta property="article:tag" content="AI"><meta name=twitter:card content="summary"><meta name=twitter:title content="使用Go开发MCP并接入Claude Desktop：go-mcp库实践"><meta name=twitter:description content="引言 人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。
-MCP协议简介 Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：
-调用外部工具和API 访问本地系统资源 执行特定的计算任务 获取和处理实时数据 这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。
-go-mcp库介绍 go-mcp是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。
-该库的主要特点包括：
-完整实现MCP协议规范 支持HTTP和stdio两种通信方式 灵活的服务端架构 内置请求验证和错误处理 类型安全的API设计 开发环境准备 在开始开发之前，我们需要准备以下环境：
-# 安装Go (确保版本至少为1.18) brew install go # 克隆go-mcp仓库 git clone https://github.com/virgoC0der/go-mcp.git cd go-mcp # 安装依赖 go mod tidy 实现应用启动器MCP服务 参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。"><meta name=application-name content="My cool site"><meta name=apple-mobile-web-app-title content="My cool site"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://virgoC0der.github.io/posts/go-mcp-claude/><link rel=prev href=https://virgoC0der.github.io/posts/golang-beginner-guide/><link rel=next href=https://virgoC0der.github.io/posts/go-multilingual-localization/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"使用Go开发MCP并接入Claude Desktop：go-mcp库实践","inLanguage":"zh-CN","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/virgoC0der.github.io\/posts\/go-mcp-claude\/"},"genre":"posts","keywords":"Go, Claude, MCP, AI","wordcount":1394,"url":"https:\/\/virgoC0der.github.io\/posts\/go-mcp-claude\/","datePublished":"2025-04-08T15:30:00+08:00","dateModified":"2025-04-08T15:30:00+08:00","publisher":{"@type":"Organization","name":""},"author":{"@type":"Person","name":"Billy"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title="Billy's Blog"><span id=id-1 class=typeit></span></a></div><div class=menu><div class=menu-inner><a class=menu-item href=/posts/>文章 </a><a class=menu-item href=/tags/>标签 </a><a class=menu-item href=/categories/>分类 </a><span class="menu-item delimiter"></span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
-<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title="Billy's Blog"><span id=id-2 class=typeit></span></a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><a class=menu-item href=/posts/ title>文章</a><a class=menu-item href=/tags/ title>标签</a><a class=menu-item href=/categories/ title>分类</a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
-<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></header><main class=main><div class=container><div class=toc id=toc-auto><h2 class=toc-title>Contents</h2><div class=toc-content id=toc-content-auto></div></div><article class="page single"><h1 class="single-title animate__animated animate__flipInX">使用Go开发MCP并接入Claude Desktop：go-mcp库实践</h1><div class=post-meta><div class=post-meta-line><span class=post-author><a href=https://github.com/virgoC0der title=Author target=_blank rel="noopener noreffer author" class=author><i class="fas fa-user-circle fa-fw" aria-hidden=true></i>Billy</a></span>&nbsp;<span class=post-category>included in <a href=/categories/%E6%8A%80%E6%9C%AF/><i class="far fa-folder fa-fw" aria-hidden=true></i>技术</a></span></div><div class=post-meta-line><i class="far fa-calendar-alt fa-fw" aria-hidden=true></i>&nbsp;<time datetime=2025-04-08>2025-04-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw" aria-hidden=true></i>&nbsp;1394 words&nbsp;
-<i class="far fa-clock fa-fw" aria-hidden=true></i>&nbsp;7 minutes&nbsp;</div></div><div class="details toc" id=toc-static data-kept><div class="details-summary toc-title"><span>Contents</span>
-<span><i class="details-icon fas fa-angle-right" aria-hidden=true></i></span></div><div class="details-content toc-content" id=toc-content-static><nav id=TableOfContents><ul><li><a href=#引言>引言</a></li><li><a href=#mcp协议简介>MCP协议简介</a></li><li><a href=#go-mcp库介绍>go-mcp库介绍</a></li><li><a href=#开发环境准备>开发环境准备</a></li><li><a href=#实现应用启动器mcp服务>实现应用启动器MCP服务</a><ul><li><a href=#1-创建项目结构>1. 创建项目结构</a></li><li><a href=#2-实现服务结构>2. 实现服务结构</a></li><li><a href=#3-实现服务接口方法>3. 实现服务接口方法</a></li><li><a href=#4-实现主函数>4. 实现主函数</a></li><li><a href=#5-构建和运行>5. 构建和运行</a></li></ul></li><li><a href=#在claude-desktop中配置mcp工具>在Claude Desktop中配置MCP工具</a></li><li><a href=#go-mcp库的mcp服务架构>go-mcp库的MCP服务架构</a><ul><li><a href=#1-服务接口>1. 服务接口</a></li><li><a href=#2-服务器实现>2. 服务器实现</a></li><li><a href=#3-类型系统>3. 类型系统</a></li></ul></li><li><a href=#stdio与http服务器对比>Stdio与HTTP服务器对比</a></li><li><a href=#扩展mcp服务功能>扩展MCP服务功能</a><ul><li><a href=#1-添加更多工具>1. 添加更多工具</a></li><li><a href=#2-支持提示功能>2. 支持提示功能</a></li></ul></li><li><a href=#安全性与最佳实践>安全性与最佳实践</a></li><li><a href=#在claude-desktop中使用mcp工具>在Claude Desktop中使用MCP工具</a></li><li><a href=#结论>结论</a></li><li><a href=#参考资料>参考资料</a></li></ul></nav></div></div><div class=content id=content><h2 id=引言>引言</h2><p>人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。</p><h2 id=mcp协议简介>MCP协议简介</h2><p>Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：</p><ul><li>调用外部工具和API</li><li>访问本地系统资源</li><li>执行特定的计算任务</li><li>获取和处理实时数据</li></ul><p>这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。</p><h2 id=go-mcp库介绍>go-mcp库介绍</h2><p><a href=https://github.com/virgoC0der/go-mcp target=_blank rel="noopener noreffer">go-mcp</a>是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。</p><p>该库的主要特点包括：</p><ul><li>完整实现MCP协议规范</li><li>支持HTTP和stdio两种通信方式</li><li>灵活的服务端架构</li><li>内置请求验证和错误处理</li><li>类型安全的API设计</li></ul><h2 id=开发环境准备>开发环境准备</h2><p>在开始开发之前，我们需要准备以下环境：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-bash"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># 安装Go (确保版本至少为1.18)</span>
-</span></span><span class=line><span class=cl>brew install go
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1># 克隆go-mcp仓库</span>
-</span></span><span class=line><span class=cl>git clone https://github.com/virgoC0der/go-mcp.git
-</span></span><span class=line><span class=cl><span class=nb>cd</span> go-mcp
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1># 安装依赖</span>
-</span></span><span class=line><span class=cl>go mod tidy</span></span></code></pre></div></div><h2 id=实现应用启动器mcp服务>实现应用启动器MCP服务</h2><p>参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。</p><h3 id=1-创建项目结构>1. 创建项目结构</h3><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-bash"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir claude-app-launcher
-</span></span><span class=line><span class=cl><span class=nb>cd</span> claude-app-launcher
-</span></span><span class=line><span class=cl>go mod init github.com/yourusername/claude-app-launcher</span></span></code></pre></div></div><h3 id=2-实现服务结构>2. 实现服务结构</h3><p>首先，让我们实现一个满足MCP协议要求的服务结构：</p><div class="code-block code-line-numbers" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=p>(</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;context&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;encoding/json&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;fmt&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;log&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;os&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;os/exec&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;os/signal&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;runtime&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;sync&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;syscall&#34;</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;github.com/virgoC0der/go-mcp&#34;</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;github.com/virgoC0der/go-mcp/internal/types&#34;</span>
-</span></span><span class=line><span class=cl>	<span class=s>&#34;github.com/virgoC0der/go-mcp/transport&#34;</span>
-</span></span><span class=line><span class=cl><span class=p>)</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// AppLauncherServer implements the MCP service interface</span>
-</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>AppLauncherServer</span> <span class=kd>struct</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=nx>prompts</span>   <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Prompt</span>
-</span></span><span class=line><span class=cl>	<span class=nx>tools</span>     <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Tool</span>
-</span></span><span class=line><span class=cl>	<span class=nx>resources</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Resource</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// NewAppLauncherServer creates a new app launcher server instance</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>NewAppLauncherServer</span><span class=p>()</span> <span class=o>*</span><span class=nx>AppLauncherServer</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=nx>s</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>AppLauncherServer</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=c1>// 定义支持的提示</span>
-</span></span><span class=line><span class=cl>		<span class=nx>prompts</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Prompt</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;openApp&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Open a macOS application&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Arguments</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptArgument</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>					<span class=p>{</span>
-</span></span><span class=line><span class=cl>						<span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;appName&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>						<span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Name of the application to open&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>						<span class=nx>Required</span><span class=p>:</span>    <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>					<span class=p>},</span>
-</span></span><span class=line><span class=cl>				<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=c1>// 定义支持的工具</span>
-</span></span><span class=line><span class=cl>		<span class=nx>tools</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Tool</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;openApp&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Open a macOS application&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>InputSchema</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>					<span class=s>&#34;type&#34;</span><span class=p>:</span> <span class=s>&#34;object&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>					<span class=s>&#34;properties&#34;</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>						<span class=s>&#34;appName&#34;</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>							<span class=s>&#34;type&#34;</span><span class=p>:</span>        <span class=s>&#34;string&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>							<span class=s>&#34;description&#34;</span><span class=p>:</span> <span class=s>&#34;Name of the application to open&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>						<span class=p>},</span>
-</span></span><span class=line><span class=cl>					<span class=p>},</span>
-</span></span><span class=line><span class=cl>					<span class=s>&#34;required&#34;</span><span class=p>:</span> <span class=p>[]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;appName&#34;</span><span class=p>},</span>
-</span></span><span class=line><span class=cl>				<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=c1>// 定义支持的资源</span>
-</span></span><span class=line><span class=cl>		<span class=nx>resources</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Resource</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>URI</span><span class=p>:</span>         <span class=s>&#34;apps&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;apps&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;List of common macOS applications&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>MimeType</span><span class=p>:</span>    <span class=s>&#34;application/json&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>s</span>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></div></div><h3 id=3-实现服务接口方法>3. 实现服务接口方法</h3><p>接下来，我们需要实现MCP服务接口所需的各种方法：</p><div class="code-block code-line-numbers" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// Initialize implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>Initialize</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>options</span> <span class=kt>any</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=c1>// 检查是否在macOS上运行</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>runtime</span><span class=p>.</span><span class=nx>GOOS</span> <span class=o>!=</span> <span class=s>&#34;darwin&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;this server is designed to run on macOS only, current OS: %s&#34;</span><span class=p>,</span> <span class=nx>runtime</span><span class=p>.</span><span class=nx>GOOS</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// ListPrompts implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>ListPrompts</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>cursor</span> <span class=kt>string</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptListResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptListResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Prompts</span><span class=p>:</span>    <span class=nx>s</span><span class=p>.</span><span class=nx>prompts</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>NextCursor</span><span class=p>:</span> <span class=s>&#34;&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// GetPrompt implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>GetPrompt</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>name</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>args</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>any</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>name</span> <span class=o>!=</span> <span class=s>&#34;openApp&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;unknown prompt: %s&#34;</span><span class=p>,</span> <span class=nx>name</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=nx>appName</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>args</span><span class=p>[</span><span class=s>&#34;appName&#34;</span><span class=p>].(</span><span class=kt>string</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=o>||</span> <span class=nx>appName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;missing or invalid argument: appName&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 调用openApp工具</span>
-</span></span><span class=line><span class=cl>	<span class=nx>result</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>s</span><span class=p>.</span><span class=nf>CallTool</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=s>&#34;openApp&#34;</span><span class=p>,</span> <span class=nx>args</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 创建响应消息</span>
-</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>responseText</span> <span class=kt>string</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>result</span><span class=p>.</span><span class=nx>IsError</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>responseText</span> <span class=p>=</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=s>&#34;Failed to open application &#39;%s&#39;: %s&#34;</span><span class=p>,</span> <span class=nx>appName</span><span class=p>,</span> <span class=nx>result</span><span class=p>.</span><span class=nx>Content</span><span class=p>[</span><span class=mi>0</span><span class=p>].</span><span class=nx>Text</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>responseText</span> <span class=p>=</span> <span class=nx>result</span><span class=p>.</span><span class=nx>Content</span><span class=p>[</span><span class=mi>0</span><span class=p>].</span><span class=nx>Text</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Application launcher result&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Messages</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Message</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Role</span><span class=p>:</span> <span class=s>&#34;assistant&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Content</span><span class=p>:</span> <span class=nx>types</span><span class=p>.</span><span class=nx>Content</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>					<span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>					<span class=nx>Text</span><span class=p>:</span> <span class=nx>responseText</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span>
-</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// ListTools implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>ListTools</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>cursor</span> <span class=kt>string</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolListResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolListResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Tools</span><span class=p>:</span>      <span class=nx>s</span><span class=p>.</span><span class=nx>tools</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>NextCursor</span><span class=p>:</span> <span class=s>&#34;&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// CallTool implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>CallTool</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>name</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>args</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>any</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>name</span> <span class=o>!=</span> <span class=s>&#34;openApp&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;unknown tool: %s&#34;</span><span class=p>,</span> <span class=nx>name</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=nx>appName</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>args</span><span class=p>[</span><span class=s>&#34;appName&#34;</span><span class=p>].(</span><span class=kt>string</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=o>||</span> <span class=nx>appName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;missing or invalid argument: appName&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 使用&#39;open&#39;命令打开应用程序</span>
-</span></span><span class=line><span class=cl>	<span class=nx>cmd</span> <span class=o>:=</span> <span class=nx>exec</span><span class=p>.</span><span class=nf>Command</span><span class=p>(</span><span class=s>&#34;open&#34;</span><span class=p>,</span> <span class=s>&#34;-a&#34;</span><span class=p>,</span> <span class=nx>appName</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=nx>err</span> <span class=o>:=</span> <span class=nx>cmd</span><span class=p>.</span><span class=nf>Run</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=c1>// 返回错误结果</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=nx>Content</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=p>{</span>
-</span></span><span class=line><span class=cl>					<span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>					<span class=nx>Text</span><span class=p>:</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=s>&#34;Error opening application: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>				<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=nx>IsError</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 返回成功结果</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Content</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>				<span class=nx>Text</span><span class=p>:</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=s>&#34;Successfully opened application: %s&#34;</span><span class=p>,</span> <span class=nx>appName</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=nx>IsError</span><span class=p>:</span> <span class=kc>false</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// ListResources implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>ListResources</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>cursor</span> <span class=kt>string</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceListResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceListResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Resources</span><span class=p>:</span>  <span class=nx>s</span><span class=p>.</span><span class=nx>resources</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>NextCursor</span><span class=p>:</span> <span class=s>&#34;&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// ReadResource implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>ReadResource</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>uri</span> <span class=kt>string</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceContent</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>uri</span> <span class=o>!=</span> <span class=s>&#34;apps&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;unknown resource: %s&#34;</span><span class=p>,</span> <span class=nx>uri</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 常见macOS应用程序列表</span>
-</span></span><span class=line><span class=cl>	<span class=nx>apps</span> <span class=o>:=</span> <span class=p>[]</span><span class=kt>string</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Safari&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Mail&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Calendar&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Notes&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Maps&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Photos&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Messages&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;FaceTime&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Music&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;App Store&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;System Settings&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Terminal&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Calculator&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;TextEdit&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Preview&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;GoLand&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Edge&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Cursor&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;Warp&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=s>&#34;iTerm 2&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=nx>content</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>json</span><span class=p>.</span><span class=nf>Marshal</span><span class=p>(</span><span class=nx>apps</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to marshal apps list: %w&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>URI</span><span class=p>:</span>      <span class=nx>uri</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>MimeType</span><span class=p>:</span> <span class=s>&#34;application/json&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Text</span><span class=p>:</span>     <span class=nb>string</span><span class=p>(</span><span class=nx>content</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>	<span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// ListResourceTemplates implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>ListResourceTemplates</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>)</span> <span class=p>([]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceTemplate</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceTemplate</span><span class=p>{},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// SubscribeToResource implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>SubscribeToResource</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>uri</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;resource subscription not supported&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl><span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=c1>// Shutdown implements the Server interface</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>AppLauncherServer</span><span class=p>)</span> <span class=nf>Shutdown</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></div></div><h3 id=4-实现主函数>4. 实现主函数</h3><p>最后，我们需要实现主函数，同时启动HTTP和stdio两种服务模式：</p><div class="code-block code-line-numbers" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>	<span class=c1>// 创建应用启动器服务</span>
-</span></span><span class=line><span class=cl>	<span class=nx>service</span> <span class=o>:=</span> <span class=nf>NewAppLauncherServer</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 创建用于优雅关闭的上下文</span>
-</span></span><span class=line><span class=cl>	<span class=nx>ctx</span><span class=p>,</span> <span class=nx>cancel</span> <span class=o>:=</span> <span class=nx>context</span><span class=p>.</span><span class=nf>WithCancel</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>())</span>
-</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nf>cancel</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 创建具有能力声明的HTTP服务器</span>
-</span></span><span class=line><span class=cl>	<span class=nx>httpServer</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>mcp</span><span class=p>.</span><span class=nf>NewServer</span><span class=p>(</span><span class=nx>service</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ServerOptions</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Address</span><span class=p>:</span> <span class=s>&#34;:8080&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>		<span class=nx>Capabilities</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ServerCapabilities</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=nx>Tools</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolCapabilities</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>ListChanged</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=nx>Prompts</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptCapabilities</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>ListChanged</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>			<span class=nx>Resources</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>ResourceCapabilities</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>				<span class=nx>ListChanged</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>			<span class=p>},</span>
-</span></span><span class=line><span class=cl>		<span class=p>},</span>
-</span></span><span class=line><span class=cl>	<span class=p>})</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Fatal</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 初始化HTTP服务器</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>httpServer</span><span class=p>.</span><span class=nf>Initialize</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=kc>nil</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;Failed to initialize HTTP server: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 创建stdio服务器</span>
-</span></span><span class=line><span class=cl>	<span class=c1>// 由于StdioServer期望types.Server但我们的服务是types.MCPService，</span>
-</span></span><span class=line><span class=cl>	<span class=c1>// 我们需要使用HTTP服务器作为stdio的服务器实现</span>
-</span></span><span class=line><span class=cl>	<span class=nx>stdioServer</span> <span class=o>:=</span> <span class=nx>transport</span><span class=p>.</span><span class=nf>NewStdioServer</span><span class=p>(</span><span class=nx>httpServer</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 使用WaitGroup管理goroutine</span>
-</span></span><span class=line><span class=cl>	<span class=nx>wg</span> <span class=o>:=</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>{}</span>
-</span></span><span class=line><span class=cl>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>2</span><span class=p>)</span> <span class=c1>// 一个用于HTTP服务器，一个用于stdio服务器</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 启动HTTP服务器</span>
-</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Starting HTTP server on :8080&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>httpServer</span><span class=p>.</span><span class=nf>Start</span><span class=p>();</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;HTTP server error: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>			<span class=nf>cancel</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>		<span class=p>}</span>
-</span></span><span class=line><span class=cl>	<span class=p>}()</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 启动stdio服务器</span>
-</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Starting stdio server&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>stdioServer</span><span class=p>.</span><span class=nf>Start</span><span class=p>();</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>			<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Stdio server error: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>			<span class=nf>cancel</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>		<span class=p>}</span>
-</span></span><span class=line><span class=cl>	<span class=p>}()</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 处理中断信号</span>
-</span></span><span class=line><span class=cl>	<span class=nx>sigChan</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=nx>os</span><span class=p>.</span><span class=nx>Signal</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=nx>signal</span><span class=p>.</span><span class=nf>Notify</span><span class=p>(</span><span class=nx>sigChan</span><span class=p>,</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>SIGINT</span><span class=p>,</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>SIGTERM</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 等待关闭信号或错误</span>
-</span></span><span class=line><span class=cl>	<span class=nx>shutdownCh</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span>
-</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>select</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>sigChan</span><span class=p>:</span>
-</span></span><span class=line><span class=cl>			<span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;Received shutdown signal&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ctx</span><span class=p>.</span><span class=nf>Done</span><span class=p>():</span>
-</span></span><span class=line><span class=cl>			<span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;Server error occurred&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>		<span class=p>}</span>
-</span></span><span class=line><span class=cl>		<span class=nb>close</span><span class=p>(</span><span class=nx>shutdownCh</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}()</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=o>&lt;-</span><span class=nx>shutdownCh</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 优雅关闭</span>
-</span></span><span class=line><span class=cl>	<span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;Shutting down servers...&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 停止stdio服务器</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>stdioServer</span><span class=p>.</span><span class=nf>Stop</span><span class=p>();</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Stdio server shutdown error: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 关闭HTTP服务器</span>
-</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>httpServer</span><span class=p>.</span><span class=nf>Shutdown</span><span class=p>(</span><span class=nx>ctx</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;HTTP server shutdown error: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>	<span class=p>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>	<span class=c1>// 等待服务器完成</span>
-</span></span><span class=line><span class=cl>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
-</span></span><span class=line><span class=cl>	<span class=nx>log</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;All servers stopped&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></div></div><h3 id=5-构建和运行>5. 构建和运行</h3><p>完成代码编写后，我们可以构建并运行我们的应用：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-bash"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>go build -o claude-app-launcher
-</span></span><span class=line><span class=cl>./claude-app-launcher</span></span></code></pre></div></div><p>这将同时启动HTTP服务器（监听8080端口）和stdio服务器。</p><h2 id=在claude-desktop中配置mcp工具>在Claude Desktop中配置MCP工具</h2><p>要将MCP工具接入Claude Desktop，我们需要编辑Claude Desktop的配置文件：</p><ol><li>打开Claude Desktop</li><li>进入设置 (Settings) > 开发者选项 (Developer) > 编辑配置 (Edit Config)</li><li>在配置文件中添加以下内容：</li></ol><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-json"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
-</span></span><span class=line><span class=cl>  <span class=nt>&#34;mac-app-opener&#34;</span><span class=p>:</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>    <span class=nt>&#34;args&#34;</span><span class=p>:</span> <span class=p>[],</span>
-</span></span><span class=line><span class=cl>    <span class=nt>&#34;command&#34;</span><span class=p>:</span> <span class=s2>&#34;/path/to/your/claude-app-launcher&#34;</span>
-</span></span><span class=line><span class=cl>  <span class=p>}</span>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></div></div><p>其中，<code>/path/to/your/claude-app-launcher</code>是您的MCP工具的完整路径。保存配置后，Claude Desktop将能够使用您开发的MCP工具。</p><h2 id=go-mcp库的mcp服务架构>go-mcp库的MCP服务架构</h2><p>go-mcp库实现了完整的MCP服务架构，主要包括以下几个核心组件：</p><h3 id=1-服务接口>1. 服务接口</h3><p><code>types.MCPService</code>接口定义了MCP服务需要实现的所有方法，包括：</p><ul><li>工具管理：<code>ListTools</code>、<code>CallTool</code></li><li>提示管理：<code>ListPrompts</code>、<code>GetPrompt</code></li><li>资源管理：<code>ListResources</code>、<code>ReadResource</code>等</li></ul><h3 id=2-服务器实现>2. 服务器实现</h3><p>该库提供了两种服务器实现：</p><ul><li><strong>HTTP服务器</strong>：通过HTTP协议提供服务，适合网络通信和调试</li><li><strong>Stdio服务器</strong>：通过标准输入/输出提供服务，适合与Claude Desktop直接集成</li></ul><h3 id=3-类型系统>3. 类型系统</h3><p>库提供了丰富的类型定义，确保API调用的类型安全：</p><ul><li><code>Tool</code>：表示一个可调用的工具</li><li><code>Prompt</code>：表示一个可使用的提示</li><li><code>Resource</code>：表示一个可访问的资源</li><li>以及各种结果类型和内容类型</li></ul><h2 id=stdio与http服务器对比>Stdio与HTTP服务器对比</h2><p>go-mcp库同时支持HTTP和stdio两种通信方式，它们各有优缺点：</p><table><thead><tr><th>特性</th><th>Stdio模式</th><th>HTTP模式</th></tr></thead><tbody><tr><td>安全性</td><td>更高（无网络通信）</td><td>较低（需要考虑网络安全）</td></tr><tr><td>配置复杂度</td><td>更简单（直接指向可执行文件）</td><td>较复杂（需要配置URL和端口）</td></tr><tr><td>资源占用</td><td>更低（按需启动）</td><td>较高（需要常驻运行HTTP服务器）</td></tr><tr><td>调试便利性</td><td>较低（难以直接测试）</td><td>更高（可以使用curl等工具直接测试）</td></tr><tr><td>并发处理</td><td>单一请求流</td><td>支持并发请求</td></tr></tbody></table><p>在我们的实现中，同时提供了这两种模式，用户可以根据自己的需求选择合适的连接方式。</p><h2 id=扩展mcp服务功能>扩展MCP服务功能</h2><p>我们可以扩展应用启动器服务，增加更多功能：</p><h3 id=1-添加更多工具>1. 添加更多工具</h3><p>例如，添加一个文件操作工具：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// 在NewAppLauncherServer中添加</span>
-</span></span><span class=line><span class=cl><span class=nx>tools</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Tool</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>    <span class=c1>// 保留原有的openApp工具</span>
-</span></span><span class=line><span class=cl>    <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;openApp&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Open a macOS application&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>InputSchema</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>            <span class=c1>// ...原有定义...</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=c1>// 添加新的fileOperations工具</span>
-</span></span><span class=line><span class=cl>    <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;fileOperations&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Read or write files&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>InputSchema</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>            <span class=s>&#34;type&#34;</span><span class=p>:</span> <span class=s>&#34;object&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>            <span class=s>&#34;properties&#34;</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>                <span class=s>&#34;operation&#34;</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;type&#34;</span><span class=p>:</span>        <span class=s>&#34;string&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;enum&#34;</span><span class=p>:</span>        <span class=p>[]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;read&#34;</span><span class=p>,</span> <span class=s>&#34;write&#34;</span><span class=p>},</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;description&#34;</span><span class=p>:</span> <span class=s>&#34;Operation type: read or write&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>                <span class=s>&#34;path&#34;</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;type&#34;</span><span class=p>:</span>        <span class=s>&#34;string&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;description&#34;</span><span class=p>:</span> <span class=s>&#34;File path&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>                <span class=s>&#34;content&#34;</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kd>interface</span><span class=p>{}{</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;type&#34;</span><span class=p>:</span>        <span class=s>&#34;string&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                    <span class=s>&#34;description&#34;</span><span class=p>:</span> <span class=s>&#34;File content for write operation&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=s>&#34;required&#34;</span><span class=p>:</span> <span class=p>[]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;operation&#34;</span><span class=p>,</span> <span class=s>&#34;path&#34;</span><span class=p>},</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=p>},</span>
-</span></span><span class=line><span class=cl><span class=p>},</span></span></span></code></pre></div></div><p>然后添加对应的CallTool处理逻辑：</p><div class="code-block code-line-numbers" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// CallTool实现中添加</span>
-</span></span><span class=line><span class=cl><span class=k>if</span> <span class=nx>name</span> <span class=o>==</span> <span class=s>&#34;fileOperations&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>    <span class=nx>operation</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>args</span><span class=p>[</span><span class=s>&#34;operation&#34;</span><span class=p>].(</span><span class=kt>string</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>    <span class=nx>path</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>args</span><span class=p>[</span><span class=s>&#34;path&#34;</span><span class=p>].(</span><span class=kt>string</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>    <span class=nx>content</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>args</span><span class=p>[</span><span class=s>&#34;content&#34;</span><span class=p>].(</span><span class=kt>string</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>    
-</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>path</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;missing or invalid argument: path&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>    <span class=p>}</span>
-</span></span><span class=line><span class=cl>    
-</span></span><span class=line><span class=cl>    <span class=k>switch</span> <span class=nx>operation</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=s>&#34;read&#34;</span><span class=p>:</span>
-</span></span><span class=line><span class=cl>        <span class=nx>data</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>os</span><span class=p>.</span><span class=nf>ReadFile</span><span class=p>(</span><span class=nx>path</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Content</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>                    <span class=p>{</span>
-</span></span><span class=line><span class=cl>                        <span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                        <span class=nx>Text</span><span class=p>:</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=s>&#34;Error reading file: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>                    <span class=p>},</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>                <span class=nx>IsError</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl>        <span class=p>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=nx>Content</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=p>{</span>
-</span></span><span class=line><span class=cl>                    <span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                    <span class=nx>Text</span><span class=p>:</span> <span class=nb>string</span><span class=p>(</span><span class=nx>data</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=nx>IsError</span><span class=p>:</span> <span class=kc>false</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl>        
-</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=s>&#34;write&#34;</span><span class=p>:</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nx>content</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;missing or invalid argument: content&#34;</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>        <span class=p>}</span>
-</span></span><span class=line><span class=cl>        
-</span></span><span class=line><span class=cl>        <span class=nx>err</span> <span class=o>:=</span> <span class=nx>os</span><span class=p>.</span><span class=nf>WriteFile</span><span class=p>(</span><span class=nx>path</span><span class=p>,</span> <span class=p>[]</span><span class=nb>byte</span><span class=p>(</span><span class=nx>content</span><span class=p>),</span> <span class=mo>0644</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Content</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>                    <span class=p>{</span>
-</span></span><span class=line><span class=cl>                        <span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                        <span class=nx>Text</span><span class=p>:</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=s>&#34;Error writing file: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>                    <span class=p>},</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>                <span class=nx>IsError</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl>        <span class=p>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=o>&amp;</span><span class=nx>types</span><span class=p>.</span><span class=nx>CallToolResult</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=nx>Content</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>ToolContent</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=p>{</span>
-</span></span><span class=line><span class=cl>                    <span class=nx>Type</span><span class=p>:</span> <span class=s>&#34;text&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                    <span class=nx>Text</span><span class=p>:</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Sprintf</span><span class=p>(</span><span class=s>&#34;Successfully wrote %d bytes to %s&#34;</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>content</span><span class=p>),</span> <span class=nx>path</span><span class=p>),</span>
-</span></span><span class=line><span class=cl>                <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=nx>IsError</span><span class=p>:</span> <span class=kc>false</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span> <span class=kc>nil</span>
-</span></span><span class=line><span class=cl>        
-</span></span><span class=line><span class=cl>    <span class=k>default</span><span class=p>:</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;unknown operation: %s&#34;</span><span class=p>,</span> <span class=nx>operation</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>    <span class=p>}</span>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></div></div><h3 id=2-支持提示功能>2. 支持提示功能</h3><p>MCP协议的提示功能允许Claude更自然地调用工具，我们可以为新增的文件操作工具添加对应的提示：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// 在NewAppLauncherServer中添加</span>
-</span></span><span class=line><span class=cl><span class=nx>prompts</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>Prompt</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>    <span class=c1>// 保留原有的openApp提示</span>
-</span></span><span class=line><span class=cl>    <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;openApp&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Open a macOS application&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Arguments</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptArgument</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=c1>// ...原有定义...</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=c1>// 添加新的readFile提示</span>
-</span></span><span class=line><span class=cl>    <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;readFile&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Read the content of a file&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Arguments</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptArgument</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;path&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Path to the file&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Required</span><span class=p>:</span>    <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=c1>// 添加新的writeFile提示</span>
-</span></span><span class=line><span class=cl>    <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;writeFile&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Write content to a file&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>Arguments</span><span class=p>:</span> <span class=p>[]</span><span class=nx>types</span><span class=p>.</span><span class=nx>PromptArgument</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;path&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Path to the file&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Required</span><span class=p>:</span>    <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span>
-</span></span><span class=line><span class=cl>            <span class=p>{</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Name</span><span class=p>:</span>        <span class=s>&#34;content&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Description</span><span class=p>:</span> <span class=s>&#34;Content to write&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>                <span class=nx>Required</span><span class=p>:</span>    <span class=kc>true</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>            <span class=p>},</span>
-</span></span><span class=line><span class=cl>        <span class=p>},</span>
-</span></span><span class=line><span class=cl>    <span class=p>},</span>
-</span></span><span class=line><span class=cl><span class=p>},</span></span></span></code></pre></div></div><p>然后实现GetPrompt方法中对应的处理逻辑。</p><h2 id=安全性与最佳实践>安全性与最佳实践</h2><p>在开发MCP服务时，安全性是一个重要的考虑因素。以下是一些最佳实践：</p><ol><li><strong>参数验证</strong>：始终验证所有输入参数，特别是文件路径等敏感信息。</li><li><strong>权限控制</strong>：限制MCP服务的操作范围，例如只允许访问特定目录下的文件。</li><li><strong>错误处理</strong>：提供清晰的错误信息，但避免泄露敏感的系统信息。</li><li><strong>日志记录</strong>：记录所有操作，便于审计和调试。</li><li><strong>优雅关闭</strong>：确保服务可以优雅地处理关闭信号，避免资源泄漏。</li></ol><p>示例安全检查函数：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-go"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><div class=highlight><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// 路径安全检查</span>
-</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>isPathSafe</span><span class=p>(</span><span class=nx>path</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>bool</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>    <span class=c1>// 转换为绝对路径</span>
-</span></span><span class=line><span class=cl>    <span class=nx>absPath</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>filepath</span><span class=p>.</span><span class=nf>Abs</span><span class=p>(</span><span class=nx>path</span><span class=p>)</span>
-</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>false</span>
-</span></span><span class=line><span class=cl>    <span class=p>}</span>
-</span></span><span class=line><span class=cl>    
-</span></span><span class=line><span class=cl>    <span class=c1>// 定义允许访问的目录</span>
-</span></span><span class=line><span class=cl>    <span class=nx>allowedDirs</span> <span class=o>:=</span> <span class=p>[]</span><span class=kt>string</span><span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=s>&#34;/tmp&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>        <span class=nx>os</span><span class=p>.</span><span class=nf>Getenv</span><span class=p>(</span><span class=s>&#34;HOME&#34;</span><span class=p>)</span> <span class=o>+</span> <span class=s>&#34;/Documents&#34;</span><span class=p>,</span>
-</span></span><span class=line><span class=cl>    <span class=p>}</span>
-</span></span><span class=line><span class=cl>    
-</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>dir</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>allowedDirs</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nx>strings</span><span class=p>.</span><span class=nf>HasPrefix</span><span class=p>(</span><span class=nx>absPath</span><span class=p>,</span> <span class=nx>dir</span><span class=p>)</span> <span class=p>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=kc>true</span>
-</span></span><span class=line><span class=cl>        <span class=p>}</span>
-</span></span><span class=line><span class=cl>    <span class=p>}</span>
-</span></span><span class=line><span class=cl>    
-</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=kc>false</span>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></div></div><h2 id=在claude-desktop中使用mcp工具>在Claude Desktop中使用MCP工具</h2><p>一旦我们配置好了MCP工具，就可以在Claude Desktop中使用它了。使用非常简单，只需要在对话中告诉Claude你想做什么：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><pre tabindex=0><code>请帮我打开Safari浏览器</code></pre></div><p>Claude将识别这个请求，并调用我们的openApp工具来启动Safari。</p><p>更复杂的例子：</p><div class="code-block code-line-numbers open" style="counter-reset:code-block 0"><div class="code-header language-"><span class=code-title><i class="arrow fas fa-angle-right fa-fw" aria-hidden=true></i></span>
-<span class=ellipses><i class="fas fa-ellipsis-h fa-fw" aria-hidden=true></i></span>
-<span class=copy title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden=true></i></span></div><pre tabindex=0><code>请帮我读取我的待办事项列表（~/Documents/todo.txt）</code></pre></div><p>如果我们实现了文件操作功能，Claude将调用fileOperations工具来读取指定文件的内容。</p><h2 id=结论>结论</h2><p>通过go-mcp库，我们可以轻松地为Claude Desktop开发定制的MCP服务，极大地扩展AI助手的功能。库的灵活架构和双重通信模式（HTTP和stdio）为开发者提供了丰富的选择，可以根据实际需求和使用场景选择最合适的方式。</p><p>go-mcp库完整实现了MCP协议规范，提供了类型安全的API和完善的错误处理机制，使得开发过程变得简单而高效。通过本文介绍的应用启动器示例，我们展示了如何快速开发和部署一个MCP服务，并将其与Claude Desktop集成。</p><p>随着AI技术的不断发展，MCP协议将在AI助手的能力扩展中扮演越来越重要的角色，go-mcp库为Go开发者提供了一个便捷的工具来参与这一生态系统的建设。</p><h2 id=参考资料>参考资料</h2><ul><li><a href=https://github.com/virgoC0der/go-mcp target=_blank rel="noopener noreffer">go-mcp GitHub仓库</a></li><li><a href=https://docs.anthropic.com/claude/docs/model-completion-protocol target=_blank rel="noopener noreffer">MCP协议文档</a></li><li><a href=https://www.anthropic.com/claude-desktop target=_blank rel="noopener noreffer">Claude Desktop官方文档</a></li><li><a href=https://golang.org/doc/ target=_blank rel="noopener noreffer">Go语言官方文档</a></li></ul></div><div class=post-footer id=post-footer><div class=post-info><div class=post-info-line><div class=post-info-mod><span>Updated on 2025-04-08</span></div></div><div class=post-info-line><div class=post-info-md></div><div class=post-info-share><span><a href=javascript:void(0); title="Share on X" data-sharer=x data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-title="使用Go开发MCP并接入Claude Desktop：go-mcp库实践" data-hashtags=Go,Claude,MCP,AI><i class="fab fa-x-twitter fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="Share on Threads" data-sharer=threads data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-title="使用Go开发MCP并接入Claude Desktop：go-mcp库实践"><i class="fab fa-threads fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="Share on Facebook" data-sharer=facebook data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-hashtag=Go><i class="fab fa-facebook-square fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="Share on Hacker News" data-sharer=hackernews data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-title="使用Go开发MCP并接入Claude Desktop：go-mcp库实践"><i class="fab fa-hacker-news fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="Share on Line" data-sharer=line data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-title="使用Go开发MCP并接入Claude Desktop：go-mcp库实践"><i data-svg-src=https://cdn.jsdelivr.net/npm/simple-icons@14.9.0/icons/line.svg aria-hidden=true></i></a><a href=javascript:void(0); title="Share on 微博" data-sharer=weibo data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-title="使用Go开发MCP并接入Claude Desktop：go-mcp库实践"><i class="fab fa-weibo fa-fw" aria-hidden=true></i></a><a href=javascript:void(0); title="Share on Diaspora" data-sharer=diaspora data-url=https://virgoC0der.github.io/posts/go-mcp-claude/ data-title="使用Go开发MCP并接入Claude Desktop：go-mcp库实践" data-description><i class="fab fa-diaspora fa-fw" aria-hidden=true></i></a><a href="https://t.me/share/url?url=https%3a%2f%2fvirgoC0der.github.io%2fposts%2fgo-mcp-claude%2f&amp;text=%e4%bd%bf%e7%94%a8Go%e5%bc%80%e5%8f%91MCP%e5%b9%b6%e6%8e%a5%e5%85%a5Claude%20Desktop%ef%bc%9ago-mcp%e5%ba%93%e5%ae%9e%e8%b7%b5" target=_blank title="Share on Telegram"><i class="fab fa-telegram fa-fw" aria-hidden=true></i></a></span></div></div></div><div class=post-info-more><section class=post-tags><i class="fas fa-tags fa-fw" aria-hidden=true></i>&nbsp;<a href=/tags/go/>Go</a>,&nbsp;<a href=/tags/claude/>Claude</a>,&nbsp;<a href=/tags/mcp/>MCP</a>,&nbsp;<a href=/tags/ai/>AI</a></section><section><span><a href=javascript:void(0); onclick=window.history.back()>Back</a></span>&nbsp;|&nbsp;<span><a href=/>Home</a></span></section></div><div class=post-nav><a href=/posts/golang-beginner-guide/ class=prev rel=prev title=Go语言入门指南：从零开始的Go编程之旅><i class="fas fa-angle-left fa-fw" aria-hidden=true></i>Go语言入门指南：从零开始的Go编程之旅</a>
-<a href=/posts/go-multilingual-localization/ class=next rel=next title=使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战<i class="fas fa-angle-right fa-fw" aria-hidden=true></i></a></div></div></article></div></main><footer class=footer><div class=footer-container><div class=footer-line>Billy</div><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.145.0">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.3.1-DEV"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2025</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=https://github.com/virgoC0der target=_blank>Billy</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top"><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i></a></div><div id=fixed-buttons-hidden><a href=# id=view-comments class=fixed-button title="View Comments"><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><script src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.2/sharer.min.js></script><script src=https://cdn.jsdelivr.net/npm/typeit@8.6.0/dist/index.umd.js></script><script>window.config={comment:{},data:{"id-1":"Billy's Blog","id-2":"Billy's Blog"},typeit:{cursorChar:"|",cursorSpeed:1e3,data:{"id-1":["id-1"],"id-2":["id-2"]},duration:-1,speed:100}}</script><script src=/js/theme.min.js></script></body></html>
+<!doctype html><html lang=zh-CN><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践 | Billy's Blog</title>
+<link rel=stylesheet href=/css/main.css><script defer src=https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js></script></head><body><div class="prose prose-lg max-w-none p-8 font-sans"><button onclick=history.back() class="mb-6 px-4 py-2 bg-white border-2 border-black font-bold hover:bg-black hover:text-white transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer">
+← 返回</button><h1 class="text-4xl font-black mb-4">使用Go开发MCP并接入Claude Desktop：go-mcp库实践</h1><div class="border-b-2 border-black mb-8"></div><h2 id=引言>引言</h2><p>人工智能助手如Claude已经成为我们日常工作的重要工具，但其能力往往受限于预设功能。通过Model Completion Protocol (MCP)，我们可以显著扩展AI助手的能力边界，使其能够执行更多实用的任务。本文将详细介绍如何使用go-mcp开源库在Go语言环境下开发MCP服务，并将其成功接入Claude Desktop，实现与本地应用程序的交互。</p><h2 id=mcp协议简介>MCP协议简介</h2><p>Model Completion Protocol (MCP)是一个允许AI助手与外部工具进行交互的协议。通过MCP，Claude等AI助手可以：</p><ul><li>调用外部工具和API</li><li>访问本地系统资源</li><li>执行特定的计算任务</li><li>获取和处理实时数据</li></ul><p>这使得Claude能够突破知识截止日期的限制，获取最新信息，并执行需要额外计算能力或系统访问权限的任务。</p><h2 id=go-mcp库介绍>go-mcp库介绍</h2><p><a href=https://github.com/virgoC0der/go-mcp>go-mcp</a>是一个基于Go语言的MCP协议实现库，它提供了一套完整的API用于开发MCP服务。使用go-mcp，开发者可以轻松地创建自定义工具，并将这些工具无缝集成到Claude Desktop中。</p><p>该库的主要特点包括：</p><ul><li>完整实现MCP协议规范</li><li>支持HTTP和stdio两种通信方式</li><li>灵活的服务端架构</li><li>内置请求验证和错误处理</li><li>类型安全的API设计</li></ul><h2 id=开发环境准备>开发环境准备</h2><p>在开始开发之前，我们需要准备以下环境：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#75715e># 安装Go (确保版本至少为1.18)</span>
+</span></span><span style=display:flex><span>brew install go
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 克隆go-mcp仓库</span>
+</span></span><span style=display:flex><span>git clone https://github.com/virgoC0der/go-mcp.git
+</span></span><span style=display:flex><span>cd go-mcp
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># 安装依赖</span>
+</span></span><span style=display:flex><span>go mod tidy
+</span></span></code></pre></div><h2 id=实现应用启动器mcp服务>实现应用启动器MCP服务</h2><p>参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。</p><h3 id=1-创建项目结构>1. 创建项目结构</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>mkdir claude-app-launcher
+</span></span><span style=display:flex><span>cd claude-app-launcher
+</span></span><span style=display:flex><span>go mod init github.com/yourusername/claude-app-launcher
+</span></span></code></pre></div><h3 id=2-实现服务结构>2. 实现服务结构</h3><p>首先，让我们实现一个满足MCP协议要求的服务结构：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>main</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;context&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;encoding/json&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;log&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;os&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;os/exec&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;os/signal&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;runtime&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;sync&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;syscall&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;github.com/virgoC0der/go-mcp&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;github.com/virgoC0der/go-mcp/internal/types&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;github.com/virgoC0der/go-mcp/transport&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// AppLauncherServer implements the MCP service interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>AppLauncherServer</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>prompts</span>   []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Prompt</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>tools</span>     []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Tool</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>resources</span> []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Resource</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// NewAppLauncherServer creates a new app launcher server instance</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewAppLauncherServer</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span> {
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>AppLauncherServer</span>{
+</span></span><span style=display:flex><span>		<span style=color:#75715e>// 定义支持的提示</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>prompts</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Prompt</span>{
+</span></span><span style=display:flex><span>			{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;openApp&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Open a macOS application&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Arguments</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptArgument</span>{
+</span></span><span style=display:flex><span>					{
+</span></span><span style=display:flex><span>						<span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;appName&#34;</span>,
+</span></span><span style=display:flex><span>						<span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Name of the application to open&#34;</span>,
+</span></span><span style=display:flex><span>						<span style=color:#a6e22e>Required</span>:    <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>					},
+</span></span><span style=display:flex><span>				},
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>		<span style=color:#75715e>// 定义支持的工具</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>tools</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Tool</span>{
+</span></span><span style=display:flex><span>			{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;openApp&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Open a macOS application&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>InputSchema</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>					<span style=color:#e6db74>&#34;type&#34;</span>: <span style=color:#e6db74>&#34;object&#34;</span>,
+</span></span><span style=display:flex><span>					<span style=color:#e6db74>&#34;properties&#34;</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>						<span style=color:#e6db74>&#34;appName&#34;</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>							<span style=color:#e6db74>&#34;type&#34;</span>:        <span style=color:#e6db74>&#34;string&#34;</span>,
+</span></span><span style=display:flex><span>							<span style=color:#e6db74>&#34;description&#34;</span>: <span style=color:#e6db74>&#34;Name of the application to open&#34;</span>,
+</span></span><span style=display:flex><span>						},
+</span></span><span style=display:flex><span>					},
+</span></span><span style=display:flex><span>					<span style=color:#e6db74>&#34;required&#34;</span>: []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;appName&#34;</span>},
+</span></span><span style=display:flex><span>				},
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>		<span style=color:#75715e>// 定义支持的资源</span>
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>resources</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Resource</span>{
+</span></span><span style=display:flex><span>			{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>URI</span>:         <span style=color:#e6db74>&#34;apps&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;apps&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;List of common macOS applications&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>MimeType</span>:    <span style=color:#e6db74>&#34;application/json&#34;</span>,
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>s</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=3-实现服务接口方法>3. 实现服务接口方法</h3><p>接下来，我们需要实现MCP服务接口所需的各种方法：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// Initialize implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>Initialize</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>options</span> <span style=color:#66d9ef>any</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 检查是否在macOS上运行</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>runtime</span>.<span style=color:#a6e22e>GOOS</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;darwin&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;this server is designed to run on macOS only, current OS: %s&#34;</span>, <span style=color:#a6e22e>runtime</span>.<span style=color:#a6e22e>GOOS</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ListPrompts implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>ListPrompts</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>cursor</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptListResult</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptListResult</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Prompts</span>:    <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>prompts</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>NextCursor</span>: <span style=color:#e6db74>&#34;&#34;</span>,
+</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// GetPrompt implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>GetPrompt</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>name</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>args</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>any</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptResult</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>name</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;openApp&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;unknown prompt: %s&#34;</span>, <span style=color:#a6e22e>name</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>appName</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>args</span>[<span style=color:#e6db74>&#34;appName&#34;</span>].(<span style=color:#66d9ef>string</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>ok</span> <span style=color:#f92672>||</span> <span style=color:#a6e22e>appName</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing or invalid argument: appName&#34;</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 调用openApp工具</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>result</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>CallTool</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#e6db74>&#34;openApp&#34;</span>, <span style=color:#a6e22e>args</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建响应消息</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>var</span> <span style=color:#a6e22e>responseText</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>result</span>.<span style=color:#a6e22e>IsError</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>responseText</span> = <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Failed to open application &#39;%s&#39;: %s&#34;</span>, <span style=color:#a6e22e>appName</span>, <span style=color:#a6e22e>result</span>.<span style=color:#a6e22e>Content</span>[<span style=color:#ae81ff>0</span>].<span style=color:#a6e22e>Text</span>)
+</span></span><span style=display:flex><span>	} <span style=color:#66d9ef>else</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>responseText</span> = <span style=color:#a6e22e>result</span>.<span style=color:#a6e22e>Content</span>[<span style=color:#ae81ff>0</span>].<span style=color:#a6e22e>Text</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptResult</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Application launcher result&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Messages</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Message</span>{
+</span></span><span style=display:flex><span>			{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Role</span>: <span style=color:#e6db74>&#34;assistant&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Content</span>: <span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Content</span>{
+</span></span><span style=display:flex><span>					<span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>					<span style=color:#a6e22e>Text</span>: <span style=color:#a6e22e>responseText</span>,
+</span></span><span style=display:flex><span>				},
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ListTools implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>ListTools</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>cursor</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolListResult</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolListResult</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Tools</span>:      <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>tools</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>NextCursor</span>: <span style=color:#e6db74>&#34;&#34;</span>,
+</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// CallTool implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>CallTool</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>name</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>args</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>any</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>name</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;openApp&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;unknown tool: %s&#34;</span>, <span style=color:#a6e22e>name</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>appName</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>args</span>[<span style=color:#e6db74>&#34;appName&#34;</span>].(<span style=color:#66d9ef>string</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>ok</span> <span style=color:#f92672>||</span> <span style=color:#a6e22e>appName</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing or invalid argument: appName&#34;</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 使用&#39;open&#39;命令打开应用程序</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cmd</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>exec</span>.<span style=color:#a6e22e>Command</span>(<span style=color:#e6db74>&#34;open&#34;</span>, <span style=color:#e6db74>&#34;-a&#34;</span>, <span style=color:#a6e22e>appName</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>cmd</span>.<span style=color:#a6e22e>Run</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#75715e>// 返回错误结果</span>
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>{
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Content</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolContent</span>{
+</span></span><span style=display:flex><span>				{
+</span></span><span style=display:flex><span>					<span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>					<span style=color:#a6e22e>Text</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Error opening application: %v&#34;</span>, <span style=color:#a6e22e>err</span>),
+</span></span><span style=display:flex><span>				},
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>IsError</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>		}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 返回成功结果</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Content</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolContent</span>{
+</span></span><span style=display:flex><span>			{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>Text</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Successfully opened application: %s&#34;</span>, <span style=color:#a6e22e>appName</span>),
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>IsError</span>: <span style=color:#66d9ef>false</span>,
+</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ListResources implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>ListResources</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>cursor</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceListResult</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceListResult</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Resources</span>:  <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>resources</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>NextCursor</span>: <span style=color:#e6db74>&#34;&#34;</span>,
+</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ReadResource implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>ReadResource</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>uri</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceContent</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>uri</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;apps&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;unknown resource: %s&#34;</span>, <span style=color:#a6e22e>uri</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 常见macOS应用程序列表</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>apps</span> <span style=color:#f92672>:=</span> []<span style=color:#66d9ef>string</span>{
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Safari&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Mail&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Calendar&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Notes&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Maps&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Photos&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Messages&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;FaceTime&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Music&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;App Store&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;System Settings&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Terminal&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Calculator&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;TextEdit&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Preview&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;GoLand&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Edge&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Cursor&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Warp&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;iTerm 2&#34;</span>,
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Marshal</span>(<span style=color:#a6e22e>apps</span>)
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;failed to marshal apps list: %w&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceContent</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>URI</span>:      <span style=color:#a6e22e>uri</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>MimeType</span>: <span style=color:#e6db74>&#34;application/json&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Text</span>:     string(<span style=color:#a6e22e>content</span>),
+</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// ListResourceTemplates implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>ListResourceTemplates</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) ([]<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceTemplate</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceTemplate</span>{}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// SubscribeToResource implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>SubscribeToResource</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>uri</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;resource subscription not supported&#34;</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// Shutdown implements the Server interface</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AppLauncherServer</span>) <span style=color:#a6e22e>Shutdown</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=4-实现主函数>4. 实现主函数</h3><p>最后，我们需要实现主函数，同时启动HTTP和stdio两种服务模式：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建应用启动器服务</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>service</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>NewAppLauncherServer</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建用于优雅关闭的上下文</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>cancel</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>WithCancel</span>(<span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Background</span>())
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>cancel</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建具有能力声明的HTTP服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>httpServer</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>mcp</span>.<span style=color:#a6e22e>NewServer</span>(<span style=color:#a6e22e>service</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ServerOptions</span>{
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Address</span>: <span style=color:#e6db74>&#34;:8080&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>Capabilities</span>: <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ServerCapabilities</span>{
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Tools</span>: <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolCapabilities</span>{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>ListChanged</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Prompts</span>: <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptCapabilities</span>{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>ListChanged</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>Resources</span>: <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ResourceCapabilities</span>{
+</span></span><span style=display:flex><span>				<span style=color:#a6e22e>ListChanged</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>			},
+</span></span><span style=display:flex><span>		},
+</span></span><span style=display:flex><span>	})
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatal</span>(<span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 初始化HTTP服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>httpServer</span>.<span style=color:#a6e22e>Initialize</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#66d9ef>nil</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;Failed to initialize HTTP server: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建stdio服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 由于StdioServer期望types.Server但我们的服务是types.MCPService，</span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 我们需要使用HTTP服务器作为stdio的服务器实现</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>stdioServer</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>transport</span>.<span style=color:#a6e22e>NewStdioServer</span>(<span style=color:#a6e22e>httpServer</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 使用WaitGroup管理goroutine</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>wg</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>WaitGroup</span>{}
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Add</span>(<span style=color:#ae81ff>2</span>) <span style=color:#75715e>// 一个用于HTTP服务器，一个用于stdio服务器</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 启动HTTP服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>go</span> <span style=color:#66d9ef>func</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Done</span>()
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;Starting HTTP server on :8080&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>httpServer</span>.<span style=color:#a6e22e>Start</span>(); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;HTTP server error: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>cancel</span>()
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 启动stdio服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>go</span> <span style=color:#66d9ef>func</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Done</span>()
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;Starting stdio server&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>stdioServer</span>.<span style=color:#a6e22e>Start</span>(); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;Stdio server error: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>cancel</span>()
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>	}()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 处理中断信号</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>sigChan</span> <span style=color:#f92672>:=</span> make(<span style=color:#66d9ef>chan</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>Signal</span>, <span style=color:#ae81ff>1</span>)
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>signal</span>.<span style=color:#a6e22e>Notify</span>(<span style=color:#a6e22e>sigChan</span>, <span style=color:#a6e22e>syscall</span>.<span style=color:#a6e22e>SIGINT</span>, <span style=color:#a6e22e>syscall</span>.<span style=color:#a6e22e>SIGTERM</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 等待关闭信号或错误</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>shutdownCh</span> <span style=color:#f92672>:=</span> make(<span style=color:#66d9ef>chan</span> <span style=color:#66d9ef>struct</span>{})
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>go</span> <span style=color:#66d9ef>func</span>() {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>select</span> {
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>case</span> <span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>sigChan</span>:
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#e6db74>&#34;Received shutdown signal&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>case</span> <span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>ctx</span>.<span style=color:#a6e22e>Done</span>():
+</span></span><span style=display:flex><span>			<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#e6db74>&#34;Server error occurred&#34;</span>)
+</span></span><span style=display:flex><span>		}
+</span></span><span style=display:flex><span>		close(<span style=color:#a6e22e>shutdownCh</span>)
+</span></span><span style=display:flex><span>	}()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>shutdownCh</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 优雅关闭</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#e6db74>&#34;Shutting down servers...&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 停止stdio服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>stdioServer</span>.<span style=color:#a6e22e>Stop</span>(); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;Stdio server shutdown error: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 关闭HTTP服务器</span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>httpServer</span>.<span style=color:#a6e22e>Shutdown</span>(<span style=color:#a6e22e>ctx</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;HTTP server shutdown error: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#75715e>// 等待服务器完成</span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Wait</span>()
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#e6db74>&#34;All servers stopped&#34;</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=5-构建和运行>5. 构建和运行</h3><p>完成代码编写后，我们可以构建并运行我们的应用：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>go build -o claude-app-launcher
+</span></span><span style=display:flex><span>./claude-app-launcher
+</span></span></code></pre></div><p>这将同时启动HTTP服务器（监听8080端口）和stdio服务器。</p><h2 id=在claude-desktop中配置mcp工具>在Claude Desktop中配置MCP工具</h2><p>要将MCP工具接入Claude Desktop，我们需要编辑Claude Desktop的配置文件：</p><ol><li>打开Claude Desktop</li><li>进入设置 (Settings) > 开发者选项 (Developer) > 编辑配置 (Edit Config)</li><li>在配置文件中添加以下内容：</li></ol><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span>{
+</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;mac-app-opener&#34;</span>: {
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;args&#34;</span>: [],
+</span></span><span style=display:flex><span>    <span style=color:#f92672>&#34;command&#34;</span>: <span style=color:#e6db74>&#34;/path/to/your/claude-app-launcher&#34;</span>
+</span></span><span style=display:flex><span>  }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>其中，<code>/path/to/your/claude-app-launcher</code>是您的MCP工具的完整路径。保存配置后，Claude Desktop将能够使用您开发的MCP工具。</p><h2 id=go-mcp库的mcp服务架构>go-mcp库的MCP服务架构</h2><p>go-mcp库实现了完整的MCP服务架构，主要包括以下几个核心组件：</p><h3 id=1-服务接口>1. 服务接口</h3><p><code>types.MCPService</code>接口定义了MCP服务需要实现的所有方法，包括：</p><ul><li>工具管理：<code>ListTools</code>、<code>CallTool</code></li><li>提示管理：<code>ListPrompts</code>、<code>GetPrompt</code></li><li>资源管理：<code>ListResources</code>、<code>ReadResource</code>等</li></ul><h3 id=2-服务器实现>2. 服务器实现</h3><p>该库提供了两种服务器实现：</p><ul><li><strong>HTTP服务器</strong>：通过HTTP协议提供服务，适合网络通信和调试</li><li><strong>Stdio服务器</strong>：通过标准输入/输出提供服务，适合与Claude Desktop直接集成</li></ul><h3 id=3-类型系统>3. 类型系统</h3><p>库提供了丰富的类型定义，确保API调用的类型安全：</p><ul><li><code>Tool</code>：表示一个可调用的工具</li><li><code>Prompt</code>：表示一个可使用的提示</li><li><code>Resource</code>：表示一个可访问的资源</li><li>以及各种结果类型和内容类型</li></ul><h2 id=stdio与http服务器对比>Stdio与HTTP服务器对比</h2><p>go-mcp库同时支持HTTP和stdio两种通信方式，它们各有优缺点：</p><table><thead><tr><th>特性</th><th>Stdio模式</th><th>HTTP模式</th></tr></thead><tbody><tr><td>安全性</td><td>更高（无网络通信）</td><td>较低（需要考虑网络安全）</td></tr><tr><td>配置复杂度</td><td>更简单（直接指向可执行文件）</td><td>较复杂（需要配置URL和端口）</td></tr><tr><td>资源占用</td><td>更低（按需启动）</td><td>较高（需要常驻运行HTTP服务器）</td></tr><tr><td>调试便利性</td><td>较低（难以直接测试）</td><td>更高（可以使用curl等工具直接测试）</td></tr><tr><td>并发处理</td><td>单一请求流</td><td>支持并发请求</td></tr></tbody></table><p>在我们的实现中，同时提供了这两种模式，用户可以根据自己的需求选择合适的连接方式。</p><h2 id=扩展mcp服务功能>扩展MCP服务功能</h2><p>我们可以扩展应用启动器服务，增加更多功能：</p><h3 id=1-添加更多工具>1. 添加更多工具</h3><p>例如，添加一个文件操作工具：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// 在NewAppLauncherServer中添加</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>tools</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Tool</span>{
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 保留原有的openApp工具</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;openApp&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Open a macOS application&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>InputSchema</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// ...原有定义...</span>
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 添加新的fileOperations工具</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;fileOperations&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Read or write files&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>InputSchema</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;type&#34;</span>: <span style=color:#e6db74>&#34;object&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;properties&#34;</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>                <span style=color:#e6db74>&#34;operation&#34;</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;type&#34;</span>:        <span style=color:#e6db74>&#34;string&#34;</span>,
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;enum&#34;</span>:        []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;read&#34;</span>, <span style=color:#e6db74>&#34;write&#34;</span>},
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;description&#34;</span>: <span style=color:#e6db74>&#34;Operation type: read or write&#34;</span>,
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>                <span style=color:#e6db74>&#34;path&#34;</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;type&#34;</span>:        <span style=color:#e6db74>&#34;string&#34;</span>,
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;description&#34;</span>: <span style=color:#e6db74>&#34;File path&#34;</span>,
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>                <span style=color:#e6db74>&#34;content&#34;</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;type&#34;</span>:        <span style=color:#e6db74>&#34;string&#34;</span>,
+</span></span><span style=display:flex><span>                    <span style=color:#e6db74>&#34;description&#34;</span>: <span style=color:#e6db74>&#34;File content for write operation&#34;</span>,
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>            },
+</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;required&#34;</span>: []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;operation&#34;</span>, <span style=color:#e6db74>&#34;path&#34;</span>},
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>},
+</span></span></code></pre></div><p>然后添加对应的CallTool处理逻辑：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// CallTool实现中添加</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#a6e22e>name</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;fileOperations&#34;</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>operation</span>, <span style=color:#a6e22e>_</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>args</span>[<span style=color:#e6db74>&#34;operation&#34;</span>].(<span style=color:#66d9ef>string</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>path</span>, <span style=color:#a6e22e>_</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>args</span>[<span style=color:#e6db74>&#34;path&#34;</span>].(<span style=color:#66d9ef>string</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>content</span>, <span style=color:#a6e22e>_</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>args</span>[<span style=color:#e6db74>&#34;content&#34;</span>].(<span style=color:#66d9ef>string</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>path</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing or invalid argument: path&#34;</span>)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>operation</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;read&#34;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>data</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>ReadFile</span>(<span style=color:#a6e22e>path</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>{
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Content</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolContent</span>{
+</span></span><span style=display:flex><span>                    {
+</span></span><span style=display:flex><span>                        <span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>                        <span style=color:#a6e22e>Text</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Error reading file: %v&#34;</span>, <span style=color:#a6e22e>err</span>),
+</span></span><span style=display:flex><span>                    },
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>IsError</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>            }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>{
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Content</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolContent</span>{
+</span></span><span style=display:flex><span>                {
+</span></span><span style=display:flex><span>                    <span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>                    <span style=color:#a6e22e>Text</span>: string(<span style=color:#a6e22e>data</span>),
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>            },
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>IsError</span>: <span style=color:#66d9ef>false</span>,
+</span></span><span style=display:flex><span>        }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;write&#34;</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>content</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing or invalid argument: content&#34;</span>)
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>WriteFile</span>(<span style=color:#a6e22e>path</span>, []byte(<span style=color:#a6e22e>content</span>), <span style=color:#ae81ff>0644</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>{
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Content</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolContent</span>{
+</span></span><span style=display:flex><span>                    {
+</span></span><span style=display:flex><span>                        <span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>                        <span style=color:#a6e22e>Text</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Error writing file: %v&#34;</span>, <span style=color:#a6e22e>err</span>),
+</span></span><span style=display:flex><span>                    },
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>IsError</span>: <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>            }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>CallToolResult</span>{
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Content</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>ToolContent</span>{
+</span></span><span style=display:flex><span>                {
+</span></span><span style=display:flex><span>                    <span style=color:#a6e22e>Type</span>: <span style=color:#e6db74>&#34;text&#34;</span>,
+</span></span><span style=display:flex><span>                    <span style=color:#a6e22e>Text</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Successfully wrote %d bytes to %s&#34;</span>, len(<span style=color:#a6e22e>content</span>), <span style=color:#a6e22e>path</span>),
+</span></span><span style=display:flex><span>                },
+</span></span><span style=display:flex><span>            },
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>IsError</span>: <span style=color:#66d9ef>false</span>,
+</span></span><span style=display:flex><span>        }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>default</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;unknown operation: %s&#34;</span>, <span style=color:#a6e22e>operation</span>)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=2-支持提示功能>2. 支持提示功能</h3><p>MCP协议的提示功能允许Claude更自然地调用工具，我们可以为新增的文件操作工具添加对应的提示：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// 在NewAppLauncherServer中添加</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>prompts</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>Prompt</span>{
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 保留原有的openApp提示</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;openApp&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Open a macOS application&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Arguments</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptArgument</span>{
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// ...原有定义...</span>
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 添加新的readFile提示</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;readFile&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Read the content of a file&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Arguments</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptArgument</span>{
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;path&#34;</span>,
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Path to the file&#34;</span>,
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Required</span>:    <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>            },
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 添加新的writeFile提示</span>
+</span></span><span style=display:flex><span>    {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;writeFile&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Write content to a file&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Arguments</span>: []<span style=color:#a6e22e>types</span>.<span style=color:#a6e22e>PromptArgument</span>{
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;path&#34;</span>,
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Path to the file&#34;</span>,
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Required</span>:    <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>            },
+</span></span><span style=display:flex><span>            {
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Name</span>:        <span style=color:#e6db74>&#34;content&#34;</span>,
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Description</span>: <span style=color:#e6db74>&#34;Content to write&#34;</span>,
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>Required</span>:    <span style=color:#66d9ef>true</span>,
+</span></span><span style=display:flex><span>            },
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>    },
+</span></span><span style=display:flex><span>},
+</span></span></code></pre></div><p>然后实现GetPrompt方法中对应的处理逻辑。</p><h2 id=安全性与最佳实践>安全性与最佳实践</h2><p>在开发MCP服务时，安全性是一个重要的考虑因素。以下是一些最佳实践：</p><ol><li><strong>参数验证</strong>：始终验证所有输入参数，特别是文件路径等敏感信息。</li><li><strong>权限控制</strong>：限制MCP服务的操作范围，例如只允许访问特定目录下的文件。</li><li><strong>错误处理</strong>：提供清晰的错误信息，但避免泄露敏感的系统信息。</li><li><strong>日志记录</strong>：记录所有操作，便于审计和调试。</li><li><strong>优雅关闭</strong>：确保服务可以优雅地处理关闭信号，避免资源泄漏。</li></ol><p>示例安全检查函数：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// 路径安全检查</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>isPathSafe</span>(<span style=color:#a6e22e>path</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>bool</span> {
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 转换为绝对路径</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>absPath</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>filepath</span>.<span style=color:#a6e22e>Abs</span>(<span style=color:#a6e22e>path</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 定义允许访问的目录</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>allowedDirs</span> <span style=color:#f92672>:=</span> []<span style=color:#66d9ef>string</span>{
+</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;/tmp&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>Getenv</span>(<span style=color:#e6db74>&#34;HOME&#34;</span>) <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;/Documents&#34;</span>,
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>dir</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>allowedDirs</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>strings</span>.<span style=color:#a6e22e>HasPrefix</span>(<span style=color:#a6e22e>absPath</span>, <span style=color:#a6e22e>dir</span>) {
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>true</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=在claude-desktop中使用mcp工具>在Claude Desktop中使用MCP工具</h2><p>一旦我们配置好了MCP工具，就可以在Claude Desktop中使用它了。使用非常简单，只需要在对话中告诉Claude你想做什么：</p><pre tabindex=0><code>请帮我打开Safari浏览器
+</code></pre><p>Claude将识别这个请求，并调用我们的openApp工具来启动Safari。</p><p>更复杂的例子：</p><pre tabindex=0><code>请帮我读取我的待办事项列表（~/Documents/todo.txt）
+</code></pre><p>如果我们实现了文件操作功能，Claude将调用fileOperations工具来读取指定文件的内容。</p><h2 id=结论>结论</h2><p>通过go-mcp库，我们可以轻松地为Claude Desktop开发定制的MCP服务，极大地扩展AI助手的功能。库的灵活架构和双重通信模式（HTTP和stdio）为开发者提供了丰富的选择，可以根据实际需求和使用场景选择最合适的方式。</p><p>go-mcp库完整实现了MCP协议规范，提供了类型安全的API和完善的错误处理机制，使得开发过程变得简单而高效。通过本文介绍的应用启动器示例，我们展示了如何快速开发和部署一个MCP服务，并将其与Claude Desktop集成。</p><p>随着AI技术的不断发展，MCP协议将在AI助手的能力扩展中扮演越来越重要的角色，go-mcp库为Go开发者提供了一个便捷的工具来参与这一生态系统的建设。</p><h2 id=参考资料>参考资料</h2><ul><li><a href=https://github.com/virgoC0der/go-mcp>go-mcp GitHub仓库</a></li><li><a href=https://docs.anthropic.com/claude/docs/model-completion-protocol>MCP协议文档</a></li><li><a href=https://www.anthropic.com/claude-desktop>Claude Desktop官方文档</a></li><li><a href=https://golang.org/doc/>Go语言官方文档</a></li></ul></div></body></html>

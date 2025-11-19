@@ -1,55 +1,51 @@
-<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>Ollama - Tag - Billy's Blog</title><link>https://virgoC0der.github.io/tags/ollama/</link><description>Ollama - Tag - Billy's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Mon, 24 Mar 2025 15:56:48 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/tags/ollama/" rel="self" type="application/rss+xml"/><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>VirgoC0der</author><guid>https://virgoC0der.github.io/posts/first/</guid><description><![CDATA[<h2 id="环境准备">环境准备</h2>
-<ol>
-<li>系统要求：
-<ul>
-<li>macOS Monterey 12.3 或更高版本</li>
-<li>至少16GB内存（推荐32GB）</li>
-<li>安装Homebrew包管理器</li>
-</ul>
-</li>
-</ol>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 安装Homebrew</span>
-</span></span><span class="line"><span class="cl">/bin/bash -c <span class="s2">&#34;</span><span class="k">$(</span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="k">)</span><span class="s2">&#34;</span></span></span></code></pre></div></div>
-<h2 id="安装部署">安装部署</h2>
-<h3 id="1-安装ollama">1. 安装Ollama</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 通过curl直接安装</span>
-</span></span><span class="line"><span class="cl">curl -fsSL https://ollama.com/install.sh <span class="p">|</span> sh
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># 启动ollama服务</span>
-</span></span><span class="line"><span class="cl">ollama serve</span></span></code></pre></div></div>
-<h3 id="2-部署open-webui">2. 部署Open WebUI</h3>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 使用Docker运行webui容器</span>
-</span></span><span class="line"><span class="cl">docker run -d -p 3000:8080 <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -v ollama:/root/.ollama <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --name open-webui <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  ghcr.io/open-webui/open-webui:main</span></span></code></pre></div></div>
-<h2 id="模型加载">模型加载</h2>
-<div class="code-block code-line-numbers open" style="counter-reset: code-block 0">
-    <div class="code-header language-bash">
-        <span class="code-title"><i class="arrow fas fa-angle-right fa-fw" aria-hidden="true"></i></span>
-        <span class="ellipses"><i class="fas fa-ellipsis-h fa-fw" aria-hidden="true"></i></span>
-        <span class="copy" title="Copy to clipboard"><i class="far fa-copy fa-fw" aria-hidden="true"></i></span>
-    </div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 下载llama3模型（根据需求替换模型名称）</span>
-</span></span><span class="line"><span class="cl">ollama pull llama3
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># 查看已安装模型</span>
-</span></span><span class="line"><span class="cl">ollama list</span></span></code></pre></div></div>
-<h2 id="访问验证">访问验证</h2>
-<ol>
-<li>
-<p>打开浏览器访问：</p>]]></description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Ollama on Billy's Blog</title><link>https://virgoC0der.github.io/tags/ollama/</link><description>Recent content in Ollama on Billy's Blog</description><generator>Hugo</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Mon, 24 Mar 2025 15:56:48 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/tags/ollama/index.xml" rel="self" type="application/rss+xml"/><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/first/</guid><description>&lt;h2 id="环境准备">环境准备&lt;/h2>
+&lt;ol>
+&lt;li>系统要求：
+&lt;ul>
+&lt;li>macOS Monterey 12.3 或更高版本&lt;/li>
+&lt;li>至少16GB内存（推荐32GB）&lt;/li>
+&lt;li>安装Homebrew包管理器&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装Homebrew&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/bin/bash -c &lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#66d9ef">$(&lt;/span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh&lt;span style="color:#66d9ef">)&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="安装部署">安装部署&lt;/h2>
+&lt;h3 id="1-安装ollama">1. 安装Ollama&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 通过curl直接安装&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>curl -fsSL https://ollama.com/install.sh | sh
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 启动ollama服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama serve
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="2-部署open-webui">2. 部署Open WebUI&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用Docker运行webui容器&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>docker run -d -p 3000:8080 &lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> -v ollama:/root/.ollama &lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> --name open-webui &lt;span style="color:#ae81ff">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> ghcr.io/open-webui/open-webui:main
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="模型加载">模型加载&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载llama3模型（根据需求替换模型名称）&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama pull llama3
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 查看已安装模型&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama list
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="访问验证">访问验证&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>打开浏览器访问：&lt;/p>
+&lt;ul>
+&lt;li>Ollama管理界面：http://localhost:11434&lt;/li>
+&lt;li>WebUI界面：http://localhost:3000&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>在WebUI界面选择模型即可开始对话&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="注意事项">注意事项&lt;/h2>
+&lt;ol>
+&lt;li>确保3000/11434端口未被占用&lt;/li>
+&lt;li>首次下载模型需要较长时间（取决于网络环境）&lt;/li>
+&lt;li>建议配合Ngrok实现内网穿透&lt;/li>
+&lt;li>使用GPU加速需要额外配置Metal后端&lt;/li>
+&lt;/ol></description></item></channel></rss>
