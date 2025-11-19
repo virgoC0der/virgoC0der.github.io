@@ -20,6 +20,15 @@ jobs:
           hugo-version: '0.145.0'
           extended: true
 
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装 npm 依赖
+        run: npm ci
+
       - name: 生成静态页面
         run: hugo --minify
 
