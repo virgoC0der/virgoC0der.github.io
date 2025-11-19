@@ -407,6 +407,24 @@
 &lt;li>首次下载模型需要较长时间（取决于网络环境）&lt;/li>
 &lt;li>建议配合Ngrok实现内网穿透&lt;/li>
 &lt;li>使用GPU加速需要额外配置Metal后端&lt;/li>
-&lt;/ol></description></item><item><title>About Me</title><link>https://virgoC0der.github.io/about/</link><pubDate>Fri, 27 Oct 2023 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/about/</guid><description>&lt;h1 id="hello-im-billy">Hello, I&amp;rsquo;m Billy!&lt;/h1>
-&lt;p>Welcome to my digital garden. I&amp;rsquo;m a software engineer passionate about building cool things.&lt;/p>
-&lt;p>This site is designed to look like a retro operating system. Enjoy exploring!&lt;/p></description></item></channel></rss>
+&lt;/ol></description></item><item><title>About Me</title><link>https://virgoC0der.github.io/about/</link><pubDate>Fri, 27 Oct 2023 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/about/</guid><description>&lt;h1 id="-hello-im-virgoc0der">👋 Hello, I&amp;rsquo;m virgoC0der!&lt;/h1>
+&lt;h2 id="-backend-developer">🚀 Backend Developer&lt;/h2>
+&lt;p>I&amp;rsquo;m a passionate backend developer focused on building scalable systems and cloud-native applications.&lt;/p>
+&lt;h3 id="-what-i-do">💻 What I Do&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>Languages&lt;/strong>: Go, Python, Swift, React&lt;/li>
+&lt;li>&lt;strong>Databases&lt;/strong>: MySQL, PostgreSQL, MongoDB, Redis, Spanner&lt;/li>
+&lt;li>&lt;strong>Cloud Platforms&lt;/strong>: Google Cloud Platform, AWS&lt;/li>
+&lt;li>&lt;strong>DevOps&lt;/strong>: Docker, Kubernetes, CI/CD&lt;/li>
+&lt;/ul>
+&lt;h3 id="-ask-me-about">🎯 Ask Me About&lt;/h3>
+&lt;ul>
+&lt;li>Backend development&lt;/li>
+&lt;li>Microservices architecture&lt;/li>
+&lt;li>Cloud architecture&lt;/li>
+&lt;li>Distributed systems&lt;/li>
+&lt;/ul>
+&lt;h3 id="-current-focus">🌱 Current Focus&lt;/h3>
+&lt;p>Building scalable backend systems &amp;amp; cloud-native applications&lt;/p>
+&lt;h3 id="-fun-fact">💡 Fun Fact&lt;/h3>
+&lt;p>I believe good code is self-documenting&amp;hellip; but I comment anyway! 🚀&lt;/p></description></item></channel></rss>
