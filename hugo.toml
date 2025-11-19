@@ -2,7 +2,7 @@ baseURL = 'https://virgoC0der.github.io/'
 languageCode = 'zh-CN'
 languageName = "简体中文"
 title = "Billy's Blog"
-theme = 'loveit'
+theme = 'posthog-os'
 
 [menu]
   [[menu.main]]
@@ -46,6 +46,9 @@ theme = 'loveit'
   # website images for Open Graph and Twitter Cards
   # 网站图片, 用于 Open Graph 和 Twitter Cards
   images = []
+  # GitHub profile URL
+  # GitHub 个人主页链接
+  github = "https://github.com/virgoC0der"
 
   [params.author]
     name = "Billy"

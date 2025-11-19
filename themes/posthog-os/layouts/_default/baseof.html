@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="{{ or .Site.Language.LanguageCode .Site.Language.Lang }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+    {{ $style := resources.Get "css/main.css" | css.PostCSS }}
+    <link rel="stylesheet" href="{{ $style.RelPermalink }}">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body class="{{ if .IsHome }}overflow-hidden h-screen w-screen{{ end }}" {{ if .IsHome }} x-data="{ 
+    activeWindow: null,
+    windows: [],
+    showStartMenu: false,
+    openWindow(id, title, url) {
+        if (this.windows.find(w => w.id === id)) {
+            this.activeWindow = id;
+            return;
+        }
+        const width = 1000;
+        const height = 700;
+        const x = Math.max(0, (window.innerWidth - width) / 2) + (this.windows.length * 20);
+        const y = Math.max(0, (window.innerHeight - height) / 2) + (this.windows.length * 20);
+        this.windows.push({ id, title, url, x, y, width, height });
+        this.activeWindow = id;
+        this.showStartMenu = false;
+    },
+    closeWindow(id) {
+        this.windows = this.windows.filter(w => w.id !== id);
+        if (this.activeWindow === id) {
+            this.activeWindow = this.windows.length > 0 ? this.windows[this.windows.length - 1].id : null;
+        }
+    }
+}" @click.away="showStartMenu = false" {{ end }}>
+
+    {{ block "main" . }}{{ end }}
+
+    <!-- Start Menu (Only on Home) -->
+    {{ if .IsHome }}
+    <div x-show="showStartMenu" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 transform translate-y-2"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform translate-y-2"
+        class="fixed bottom-14 left-2 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 w-64"
+        style="display: none;">
+        <div class="border-b-2 border-black bg-black text-white px-4 py-2 font-bold">
+            菜单
+        </div>
+        <div class="p-2">
+            <button @click="openWindow('blog', 'Blog Posts', '/posts/'); showStartMenu = false;"
+                class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
+                📝 博客文章
+            </button>
+            <button @click="openWindow('about', 'About Me', '/about/'); showStartMenu = false;"
+                class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
+                👤 关于我
+            </button>
+            <a href="https://github.com/virgoC0der" target="_blank"
+                class="block w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black">
+                🔗 GitHub
+            </a>
+        </div>
+    </div>
+
+    <!-- Taskbar (Only on Home) -->
+    <div class="os-taskbar">
+        <div class="flex items-center gap-2">
+            <button @click="showStartMenu = !showStartMenu" class="os-start-btn">START</button>
+            <template x-for="win in windows" :key="win.id">
+                <button @click="activeWindow = win.id"
+                    class="px-3 py-1 border-2 border-black text-sm font-bold transition-colors"
+                    :class="activeWindow === win.id ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'"
+                    x-text="win.title"></button>
+            </template>
+        </div>
+        <div class="font-mono font-bold text-sm px-2"
+            x-text="new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div>
+    </div>
+    {{ end }}
+
+</body>
+
+</html>

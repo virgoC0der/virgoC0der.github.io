@@ -1,0 +1,13 @@
+{{ define "main" }}
+<div class="prose prose-lg max-w-none p-8 font-sans">
+    {{ if eq .Section "posts" }}
+    <button onclick="history.back()"
+        class="mb-6 px-4 py-2 bg-white border-2 border-black font-bold hover:bg-black hover:text-white transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer">
+        ← 返回
+    </button>
+    {{ end }}
+    <h1 class="text-4xl font-black mb-4">{{ .Title }}</h1>
+    <div class="border-b-2 border-black mb-8"></div>
+    {{ .Content }}
+</div>
+{{ end }}

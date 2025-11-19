@@ -1,0 +1,12 @@
+name = "PostHog OS"
+license = "MIT"
+licenselink = "https://github.com/yourname/yourtheme/blob/master/LICENSE"
+description = "A PostHog-inspired OS theme for Hugo"
+homepage = "http://example.com/"
+tags = ["blog", "minimal", "os"]
+features = ["tailwind"]
+min_version = "0.41.0"
+
+[author]
+  name = "Antigravity"
+  homepage = ""
