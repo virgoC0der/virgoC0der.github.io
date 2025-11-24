@@ -3,6 +3,13 @@
     activeWindow: null,
     windows: [],
     showStartMenu: false,
+    isDragging: false,
+    dragOffset: { x: 0, y: 0 },
+    dragWindowId: null,
+    isResizing: false,
+    resizeWindowId: null,
+    resizeStart: { x: 0, y: 0, width: 0, height: 0 },
+    
     openWindow(id, title, url) {
         if (this.windows.find(w => w.id === id)) {
             this.activeWindow = id;
@@ -21,9 +28,57 @@
         if (this.activeWindow === id) {
             this.activeWindow = this.windows.length > 0 ? this.windows[this.windows.length - 1].id : null;
         }
+    },
+    startDrag(id, event) {
+        this.isDragging = true;
+        this.dragWindowId = id;
+        this.activeWindow = id;
+        const win = this.windows.find(w => w.id === id);
+        this.dragOffset = {
+            x: event.clientX - win.x,
+            y: event.clientY - win.y
+        };
+    },
+    onDrag(event) {
+        if (!this.isDragging || !this.dragWindowId) return;
+        const win = this.windows.find(w => w.id === this.dragWindowId);
+        if (win) {
+            win.x = event.clientX - this.dragOffset.x;
+            win.y = event.clientY - this.dragOffset.y;
+        }
+    },
+    stopDrag() {
+        this.isDragging = false;
+        this.dragWindowId = null;
+    },
+    startResize(id, event) {
+        this.isResizing = true;
+        this.resizeWindowId = id;
+        this.activeWindow = id;
+        const win = this.windows.find(w => w.id === id);
+        this.resizeStart = {
+            x: event.clientX,
+            y: event.clientY,
+            width: win.width,
+            height: win.height
+        };
+    },
+    onResize(event) {
+        if (!this.isResizing || !this.resizeWindowId) return;
+        const win = this.windows.find(w => w.id === this.resizeWindowId);
+        if (win) {
+            const dx = event.clientX - this.resizeStart.x;
+            const dy = event.clientY - this.resizeStart.y;
+            win.width = Math.max(300, this.resizeStart.width + dx);
+            win.height = Math.max(200, this.resizeStart.height + dy);
+        }
+    },
+    stopResize() {
+        this.isResizing = false;
+        this.resizeWindowId = null;
     }
-}" @click.away="showStartMenu = false"><div class="p-8 grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-8 content-start h-[calc(100vh-3rem)]"><div class=os-icon @click="openWindow('blog', 'Blog Posts', '/posts/')"><div class=os-icon-img>📝</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">Blog</span></div><div class=os-icon @click="openWindow('about', 'About Me', '/about/')"><div class=os-icon-img>👤</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">About</span></div><a href=https://github.com/virgoC0der target=_blank class=os-icon><div class=os-icon-img>🐙</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">GitHub</span></a></div><template x-for="win in windows" :key=win.id><div class=os-window :style="`top: ${win.y}px; left: ${win.x}px; width: ${win.width}px; height: ${win.height}px; z-index: ${activeWindow === win.id ? 50 : 10}`" @mousedown="activeWindow = win.id"><div class=os-window-header><span class=os-window-title x-text=win.title></span>
-<button @click.stop=closeWindow(win.id) class="w-6 h-6 flex items-center justify-center border-2 border-black hover:bg-red-500 hover:text-white transition-colors font-bold">✕</button></div><div class="os-window-content bg-white p-0"><iframe :src=win.url class="w-full h-full border-none block" style="height:calc(100% - 2px)"></iframe></div></div></template><div x-show=showStartMenu x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-2" class="fixed bottom-14 left-2 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 w-64" style=display:none><div class="border-b-2 border-black bg-black text-white px-4 py-2 font-bold">菜单</div><div class=p-2><button @click="openWindow('blog', 'Blog Posts', '/posts/'); showStartMenu = false;" class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
+}" @click.away="showStartMenu = false" @mousemove.window="onDrag($event); onResize($event)" @mouseup.window="stopDrag(); stopResize()"><div class="p-8 flex flex-col gap-8 flex-wrap content-start items-start h-[calc(100vh-3rem)]"><div class=os-icon @click="openWindow('blog', 'Blog Posts', '/posts/')"><div class=os-icon-img>📝</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">Blog</span></div><div class=os-icon @click="openWindow('about', 'About Me', '/about/')"><div class=os-icon-img>👤</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">About</span></div><a href=https://github.com/virgoC0der target=_blank class=os-icon><div class=os-icon-img>🐙</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">GitHub</span></a></div><template x-for="win in windows" :key=win.id><div class=os-window :style="`top: ${win.y}px; left: ${win.x}px; width: ${win.width}px; height: ${win.height}px; z-index: ${activeWindow === win.id ? 50 : 10}`" @mousedown="activeWindow = win.id"><div class="os-window-header cursor-move" @mousedown="startDrag(win.id, $event)"><span class=os-window-title x-text=win.title></span>
+<button @click.stop=closeWindow(win.id) class="w-6 h-6 flex items-center justify-center border-2 border-black hover:bg-red-500 hover:text-white transition-colors font-bold cursor-pointer">✕</button></div><div class="os-window-content bg-white p-0"><iframe :src=win.url class="w-full h-full border-none block" style="height:calc(100% - 2px)" :class="{ 'pointer-events-none': isDragging || isResizing }"></iframe></div><div class="absolute bottom-0 right-0 w-8 h-8 cursor-se-resize z-50 flex items-end justify-end p-1" @mousedown.stop.prevent="startResize(win.id, $event)"><div class="w-4 h-4 border-r-4 border-b-4 border-black"></div></div></div></template><div x-show=showStartMenu x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-2" class="fixed bottom-14 left-2 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 w-64" style=display:none><div class="border-b-2 border-black bg-black text-white px-4 py-2 font-bold">菜单</div><div class=p-2><button @click="openWindow('blog', 'Blog Posts', '/posts/'); showStartMenu = false;" class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
 📝 博客文章
 </button>
 <button @click="openWindow('about', 'About Me', '/about/'); showStartMenu = false;" class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
