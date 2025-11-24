@@ -14,6 +14,13 @@
     activeWindow: null,
     windows: [],
     showStartMenu: false,
+    isDragging: false,
+    dragOffset: { x: 0, y: 0 },
+    dragWindowId: null,
+    isResizing: false,
+    resizeWindowId: null,
+    resizeStart: { x: 0, y: 0, width: 0, height: 0 },
+    
     openWindow(id, title, url) {
         if (this.windows.find(w => w.id === id)) {
             this.activeWindow = id;
@@ -32,8 +39,61 @@
         if (this.activeWindow === id) {
             this.activeWindow = this.windows.length > 0 ? this.windows[this.windows.length - 1].id : null;
         }
+    },
+    startDrag(id, event) {
+        this.isDragging = true;
+        this.dragWindowId = id;
+        this.activeWindow = id;
+        const win = this.windows.find(w => w.id === id);
+        this.dragOffset = {
+            x: event.clientX - win.x,
+            y: event.clientY - win.y
+        };
+    },
+    onDrag(event) {
+        if (!this.isDragging || !this.dragWindowId) return;
+        const win = this.windows.find(w => w.id === this.dragWindowId);
+        if (win) {
+            win.x = event.clientX - this.dragOffset.x;
+            win.y = event.clientY - this.dragOffset.y;
+        }
+    },
+    stopDrag() {
+        this.isDragging = false;
+        this.dragWindowId = null;
+    },
+    startResize(id, event) {
+        this.isResizing = true;
+        this.resizeWindowId = id;
+        this.activeWindow = id;
+        const win = this.windows.find(w => w.id === id);
+        this.resizeStart = {
+            x: event.clientX,
+            y: event.clientY,
+            width: win.width,
+            height: win.height
+        };
+    },
+    onResize(event) {
+        if (!this.isResizing || !this.resizeWindowId) return;
+        const win = this.windows.find(w => w.id === this.resizeWindowId);
+        if (win) {
+            const dx = event.clientX - this.resizeStart.x;
+            const dy = event.clientY - this.resizeStart.y;
+            win.width = Math.max(300, this.resizeStart.width + dx);
+            win.height = Math.max(200, this.resizeStart.height + dy);
+        }
+    },
+    stopResize() {
+        this.isResizing = false;
+        this.resizeWindowId = null;
     }
-}" @click.away="showStartMenu = false" {{ end }}>
+}"
+    @click.away="showStartMenu = false"
+    @mousemove.window="onDrag($event); onResize($event)"
+    @mouseup.window="stopDrag(); stopResize()"
+    {{ end }}
+>
 
     {{ block "main" . }}{{ end }}
 

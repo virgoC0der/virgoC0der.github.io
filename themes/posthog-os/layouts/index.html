@@ -1,5 +1,5 @@
 {{ define "main" }}
-<div class="p-8 grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-8 content-start h-[calc(100vh-3rem)]">
+<div class="p-8 flex flex-col gap-8 flex-wrap content-start items-start h-[calc(100vh-3rem)]">
     <!-- Blog Section Icon -->
     <div class="os-icon" @click="openWindow('blog', 'Blog Posts', '/posts/')">
         <div class="os-icon-img">📝</div>
@@ -26,14 +26,19 @@
     <div class="os-window"
         :style="`top: ${win.y}px; left: ${win.x}px; width: ${win.width}px; height: ${win.height}px; z-index: ${activeWindow === win.id ? 50 : 10}`"
         @mousedown="activeWindow = win.id">
-        <div class="os-window-header">
+        <div class="os-window-header cursor-move" @mousedown="startDrag(win.id, $event)">
             <span class="os-window-title" x-text="win.title"></span>
             <button @click.stop="closeWindow(win.id)"
-                class="w-6 h-6 flex items-center justify-center border-2 border-black hover:bg-red-500 hover:text-white transition-colors font-bold">✕</button>
+                class="w-6 h-6 flex items-center justify-center border-2 border-black hover:bg-red-500 hover:text-white transition-colors font-bold cursor-pointer">✕</button>
         </div>
         <div class="os-window-content bg-white p-0">
             <!-- Content loaded via iframe -->
-            <iframe :src="win.url" class="w-full h-full border-none block" style="height: calc(100% - 2px);"></iframe>
+            <iframe :src="win.url" class="w-full h-full border-none block" style="height: calc(100% - 2px);" :class="{ 'pointer-events-none': isDragging || isResizing }"></iframe>
+        </div>
+        <!-- Resize Handle -->
+        <div class="absolute bottom-0 right-0 w-8 h-8 cursor-se-resize z-50 flex items-end justify-end p-1"
+             @mousedown.stop.prevent="startResize(win.id, $event)">
+             <div class="w-4 h-4 border-r-4 border-b-4 border-black"></div>
         </div>
     </div>
 </template>
