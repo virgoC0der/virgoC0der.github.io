@@ -33,17 +33,17 @@
 &lt;li>&lt;strong>配置驱动&lt;/strong> - 使用配置文件管理国家特定设置&lt;/li>
 &lt;/ol>
 &lt;p>下面是整体架构的简化视图：&lt;/p>
-&lt;pre tabindex="0">&lt;code>┌───────────────┐ ┌─────────────────┐ ┌───────────────┐
-│ │ │ │ │ │
-│ 国家检测服务 ├─────►│ 策略工厂服务 ├─────►│ 具体国家策略 │
-│ │ │ │ │ │
-└───────┬───────┘ └─────────────────┘ └───────┬───────┘
- │ │
- │ │
- │ │
-┌───────▼───────┐ ┌─────────────────┐ ┌───────▼───────┐
-│ │ │ │ │ │
-│ i18n服务 │◄─────┤ 业务服务 ├─────►│ 支付服务 │
-│ │ │ │ │ │
-└───────────────┘ └─────────────────┘ └───────────────┘
-&lt;/code>&lt;/pre>&lt;p>接下来，我们将逐一实现这些组件。&lt;/p></description></item></channel></rss>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>┌───────────────┐ ┌─────────────────┐ ┌───────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ │ │ │ │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 国家检测服务 ├─────►│ 策略工厂服务 ├─────►│ 具体国家策略 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ │ │ │ │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└───────┬───────┘ └─────────────────┘ └───────┬───────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌───────▼───────┐ ┌─────────────────┐ ┌───────▼───────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ │ │ │ │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ i18n服务 │◄─────┤ 业务服务 ├─────►│ 支付服务 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ │ │ │ │ │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└───────────────┘ └─────────────────┘ └───────────────┘
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>接下来，我们将逐一实现这些组件。&lt;/p></description></item></channel></rss>

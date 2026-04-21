@@ -15,34 +15,34 @@
 &lt;p>首先，我们需要在系统上安装Go。访问&lt;a href="https://golang.org/dl/">Go官方下载页面&lt;/a>获取适合您系统的安装包。&lt;/p>
 &lt;p>&lt;strong>macOS安装&lt;/strong>:&lt;/p>
 &lt;p>使用Homebrew安装：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>brew install go
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>brew install go
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>或使用官方安装包安装。&lt;/p>
 &lt;p>&lt;strong>Linux安装&lt;/strong>:&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Ubuntu/Debian&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># Ubuntu/Debian&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo apt-get update
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo apt-get install golang
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># CentOS/RHEL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># CentOS/RHEL&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>sudo yum install golang
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;strong>Windows安装&lt;/strong>:&lt;/p>
 &lt;p>下载并运行MSI安装程序，按照向导完成安装。&lt;/p>
 &lt;h3 id="2-验证安装">2. 验证安装&lt;/h3>
 &lt;p>安装完成后，打开终端/命令提示符，运行以下命令验证安装：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>go version
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>go version
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>您应该看到类似以下的输出：&lt;/p>
-&lt;pre tabindex="0">&lt;code>go version go1.22.1 darwin/amd64
-&lt;/code>&lt;/pre>&lt;h3 id="3-配置工作区">3. 配置工作区&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>go version go1.22.1 darwin/amd64
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="3-配置工作区">3. 配置工作区&lt;/h3>
 &lt;p>Go 1.13及更高版本支持模块化开发，使得工作目录配置变得更加简单。但了解一下基本的GOPATH结构依然有所裨益：&lt;/p>
-&lt;pre tabindex="0">&lt;code>GOPATH/
-├── bin/ # 编译后的可执行文件
-├── pkg/ # 编译后的包文件
-└── src/ # 源代码
-&lt;/code>&lt;/pre>&lt;p>现代Go项目通常使用Go Modules来管理依赖：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 创建新项目目录&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>GOPATH/
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── bin/ # 编译后的可执行文件
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── pkg/ # 编译后的包文件
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└── src/ # 源代码
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>现代Go项目通常使用Go Modules来管理依赖：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 创建新项目目录&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>mkdir -p ~/projects/my-go-app
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd ~/projects/my-go-app
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9ece6a">cd&lt;/span> ~/projects/my-go-app
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 初始化Go模块&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 初始化Go模块&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/my-go-app
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="go语言基础">Go语言基础&lt;/h2>
 &lt;h3 id="1-第一个go程序">1. 第一个Go程序&lt;/h3>
@@ -66,23 +66,22 @@
 &lt;/ul>
 &lt;h2 id="项目结构">项目结构&lt;/h2>
 &lt;p>我们将创建一个具有以下结构的项目：&lt;/p>
-&lt;pre tabindex="0">&lt;code>docker-golang-dev/
-├── .air.toml # Air 热重载配置文件
-├── Dockerfile # 多阶段构建的 Dockerfile
-├── docker-compose.yml # Docker Compose 配置文件
-├── go.mod # Go 模块定义
-├── go.sum # Go 模块校验和
-└── src/ # Go 源代码目录
- └── main.go # 示例应用程序
-&lt;/code>&lt;/pre>&lt;h2 id="步骤一创建基础项目结构">步骤一：创建基础项目结构&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>docker-golang-dev/
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── .air.toml # Air 热重载配置文件
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── Dockerfile # 多阶段构建的 Dockerfile
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── docker-compose.yml # Docker Compose 配置文件
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── go.mod # Go 模块定义
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── go.sum # Go 模块校验和
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└── src/ # Go 源代码目录
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> └── main.go # 示例应用程序
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="步骤一创建基础项目结构">步骤一：创建基础项目结构&lt;/h2>
 &lt;p>首先，让我们创建项目目录并初始化Go模块：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir -p docker-golang-dev/src
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd docker-golang-dev
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir -p docker-golang-dev/src
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9ece6a">cd&lt;/span> docker-golang-dev
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/docker-golang-dev
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>touch go.sum
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="步骤二编写dockerfile">步骤二：编写Dockerfile&lt;/h2>
-&lt;p>Dockerfile是构建Docker镜像的核心配置文件。我们将使用多阶段构建来优化镜像大小和构建过程。&lt;/p>
-&lt;p>创建&lt;code>Dockerfile&lt;/code>文件，内容如下：&lt;/p></description></item><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/first/</guid><description>&lt;h2 id="环境准备">环境准备&lt;/h2>
+&lt;p>Dockerfile是构建Docker镜像的核心配置文件。我们将使用多阶段构建来优化镜像大小和构建过程。&lt;/p></description></item><item><title>在Mac Mini上部署私有化大语言模型</title><link>https://virgoC0der.github.io/posts/first/</link><pubDate>Mon, 24 Mar 2025 15:56:48 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/first/</guid><description>&lt;h2 id="环境准备">环境准备&lt;/h2>
 &lt;ol>
 &lt;li>系统要求：
 &lt;ul>
@@ -92,26 +91,26 @@
 &lt;/ul>
 &lt;/li>
 &lt;/ol>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装Homebrew&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/bin/bash -c &lt;span style="color:#e6db74">&amp;#34;&lt;/span>&lt;span style="color:#66d9ef">$(&lt;/span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh&lt;span style="color:#66d9ef">)&lt;/span>&lt;span style="color:#e6db74">&amp;#34;&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 安装Homebrew&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>/bin/bash -c &lt;span style="color:#9ece6a">&amp;#34;&lt;/span>&lt;span style="color:#bb9af7">$(&lt;/span>curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh&lt;span style="color:#bb9af7">)&lt;/span>&lt;span style="color:#9ece6a">&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="安装部署">安装部署&lt;/h2>
 &lt;h3 id="1-安装ollama">1. 安装Ollama&lt;/h3>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 通过curl直接安装&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 通过curl直接安装&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>curl -fsSL https://ollama.com/install.sh | sh
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 启动ollama服务&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 启动ollama服务&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama serve
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="2-部署open-webui">2. 部署Open WebUI&lt;/h3>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 使用Docker运行webui容器&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>docker run -d -p 3000:8080 &lt;span style="color:#ae81ff">\
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> -v ollama:/root/.ollama &lt;span style="color:#ae81ff">\
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> --name open-webui &lt;span style="color:#ae81ff">\
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#ae81ff">&lt;/span> ghcr.io/open-webui/open-webui:main
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 使用Docker运行webui容器&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>docker run -d -p 3000:8080 &lt;span style="color:#7aa2f7">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#7aa2f7">&lt;/span> -v ollama:/root/.ollama &lt;span style="color:#7aa2f7">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#7aa2f7">&lt;/span> --name open-webui &lt;span style="color:#7aa2f7">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#7aa2f7">&lt;/span> ghcr.io/open-webui/open-webui:main
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="模型加载">模型加载&lt;/h2>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 下载llama3模型（根据需求替换模型名称）&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 下载llama3模型（根据需求替换模型名称）&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama pull llama3
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 查看已安装模型&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 查看已安装模型&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>ollama list
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="访问验证">访问验证&lt;/h2>
 &lt;ol>

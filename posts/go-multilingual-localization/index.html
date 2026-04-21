@@ -1,663 +1,686 @@
 <!doctype html><html lang=zh-CN><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战 | Billy's Blog</title>
-<link rel=stylesheet href=/css/main.css><script defer src=https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js></script></head><body><div class="prose prose-lg max-w-none p-8 font-sans"><button onclick=history.back() class="mb-6 px-4 py-2 bg-white border-2 border-black font-bold hover:bg-black hover:text-white transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer">
-← 返回</button><h1 class="text-4xl font-black mb-4">使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1><div class="border-b-2 border-black mb-8"></div><h1 id=使用go实现业务多国本土化策略模式依赖注入与i18n集成实战>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1><p>在当今全球化的商业环境中，将产品和服务本土化以适应不同国家和地区的需求已成为企业扩张的必要步骤。然而，从技术角度来看，实现多国本土化不仅仅是简单的翻译问题，更涉及到如何优雅地处理各国在业务逻辑、法规要求、支付方式等方面的差异。本文将探讨如何使用Go语言构建一个灵活的多国本土化框架，通过策略模式、依赖注入和i18n集成来实现可扩展的国际化应用。</p><h2 id=目录>目录</h2><ol><li><a href=#%E4%B8%9A%E5%8A%A1%E5%9B%BD%E9%99%85%E5%8C%96%E7%9A%84%E6%8C%91%E6%88%98>业务国际化的挑战</a></li><li><a href=#%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1>总体架构设计</a></li><li><a href=#i18n%E5%AE%9E%E7%8E%B0%E6%96%87%E6%9C%AC%E5%92%8C%E6%B6%88%E6%81%AF%E5%9B%BD%E9%99%85%E5%8C%96>i18n实现：文本和消息国际化</a></li><li><a href=#%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F%E5%AE%9E%E7%8E%B0%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%B7%AE%E5%BC%82%E5%8C%96>策略模式实现业务逻辑差异化</a></li><li><a href=#%E4%BD%BF%E7%94%A8%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F%E7%AE%A1%E7%90%86%E5%A4%9A%E5%9B%BD%E7%AD%96%E7%95%A5>使用工厂模式管理多国策略</a></li><li><a href=#%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E4%B8%8Ewire%E9%9B%86%E6%88%90>依赖注入与Wire集成</a></li><li><a href=#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E5%9B%BD%E9%99%85%E5%8C%96%E6%94%AF%E4%BB%98%E7%B3%BB%E7%BB%9F>实战案例：国际化支付系统</a></li><li><a href=#%E6%B5%8B%E8%AF%95%E4%B8%8E%E7%BB%B4%E6%8A%A4>测试与维护</a></li><li><a href=#%E6%80%BB%E7%BB%93%E4%B8%8E%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5>总结与最佳实践</a></li></ol><h2 id=业务国际化的挑战>业务国际化的挑战</h2><p>在开始技术实现之前，让我们先明确多国本土化面临的主要挑战：</p><ol><li><strong>语言和文本翻译</strong> - 最基本的国际化需求，涉及UI、错误信息、通知等</li><li><strong>日期、时间和货币格式</strong> - 不同国家有不同的显示偏好</li><li><strong>业务规则差异</strong> - 各国法规、税务、隐私政策可能有很大不同</li><li><strong>支付方式和流程</strong> - 每个国家流行的支付方式往往不同</li><li><strong>地区特定功能</strong> - 某些功能可能只在特定国家可用</li><li><strong>可扩展性</strong> - 系统需要能够轻松添加新的国家或地区支持</li></ol><p>接下来，我们将探讨如何使用Go的各种设计模式和工具来解决这些挑战。</p><h2 id=总体架构设计>总体架构设计</h2><p>我们的多国本土化框架将基于以下核心原则：</p><ol><li><strong>关注点分离</strong> - 将翻译、业务逻辑、配置等分开处理</li><li><strong>策略模式</strong> - 使用接口定义标准行为，每个国家实现自己的策略</li><li><strong>工厂模式</strong> - 根据国家/地区代码创建适当的策略实现</li><li><strong>依赖注入</strong> - 使用Wire自动组装各个组件</li><li><strong>配置驱动</strong> - 使用配置文件管理国家特定设置</li></ol><p>下面是整体架构的简化视图：</p><pre tabindex=0><code>┌───────────────┐      ┌─────────────────┐      ┌───────────────┐
-│               │      │                 │      │               │
-│  国家检测服务  ├─────►│  策略工厂服务   ├─────►│  具体国家策略  │
-│               │      │                 │      │               │
-└───────┬───────┘      └─────────────────┘      └───────┬───────┘
-        │                                                │
-        │                                                │
-        │                                                │
-┌───────▼───────┐      ┌─────────────────┐      ┌───────▼───────┐
-│               │      │                 │      │               │
-│   i18n服务    │◄─────┤    业务服务     ├─────►│   支付服务    │
-│               │      │                 │      │               │
-└───────────────┘      └─────────────────┘      └───────────────┘
-</code></pre><p>接下来，我们将逐一实现这些组件。</p><h2 id=i18n实现文本和消息国际化>i18n实现：文本和消息国际化</h2><p>Go生态系统中有多个i18n库可供选择，这里我们将使用流行的<code>go-i18n</code>包。</p><p>首先创建项目结构：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>mkdir -p multilingual-service/internal/<span style=color:#f92672>{</span>i18n,country,payment<span style=color:#f92672>}</span>
-</span></span><span style=display:flex><span>cd multilingual-service
+<meta name=description content="后端开发者 · Go / AI / MCP · 实验室笔记"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.css></head><body><header class=topbar><div class=topbar-url><div class=topbar-dots><span></span><span></span><span></span></div><div class=topbar-addr><span class=mute>https://</span>
+<span class=brand>billy.dev</span>
+<span class=mute>/posts/go-multilingual-localization/</span>
+<span class=cmdk>⌘K</span></div></div><nav class=tabs-row aria-label=Main><a class=tabs-logo href=/><svg viewBox="0 0 40 40" width="32" height="32" style="display:block"><rect x="2" y="2" width="36" height="36" rx="8" fill="#151415"/><path d="M20 8l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f5dc5a" stroke="#f5dc5a" stroke-width="1" stroke-linejoin="round"/><circle cx="16" cy="30" r="2" fill="#fdfcf5"/><circle cx="24" cy="30" r="2" fill="#fdfcf5"/><circle cx="16.5" cy="30.5" r=".9" fill="#151415"/><circle cx="24.5" cy="30.5" r=".9" fill="#151415"/></svg><div><div class="display title">Billy's Blog</div><div class="mono handle">@virgoC0der</div></div></a><a class=tab href=/ style=--tab-color:var(--yellow)><span class=slash>/</span>~
+</a><a class="tab active" href=/posts/ style=--tab-color:var(--coral-soft)><span class=slash>/</span>posts
+</a><a class=tab href=/tags/ style=--tab-color:var(--mint)><span class=slash>/</span>tags
+</a><a class=tab href=/about/ style=--tab-color:var(--lavender)><span class=slash>/</span>about
+</a><a class=tab href=/now/ style=--tab-color:var(--peach)><span class=slash>/</span>now</a><div class=tabs-fill></div><a class=tab-rss href=/index.xml>RSS ↗</a></nav></header><main><div class=page-wrap><div class="breadcrumb mono"><a href=/>~</a> / <a href=/posts/>posts</a> / <strong>go-multilingual-localization.md</strong></div><div class=post-detail><aside class=toc><div class=head>◊ table of contents</div><nav class=toc-list id=toc><nav id=TableOfContents><ul><li><a href=#目录>目录</a></li><li><a href=#业务国际化的挑战>业务国际化的挑战</a></li><li><a href=#总体架构设计>总体架构设计</a></li><li><a href=#i18n实现文本和消息国际化>i18n实现：文本和消息国际化</a></li><li><a href=#策略模式实现业务逻辑差异化>策略模式实现业务逻辑差异化</a></li><li><a href=#使用工厂模式管理多国策略>使用工厂模式管理多国策略</a></li><li><a href=#依赖注入与wire集成>依赖注入与Wire集成</a></li><li><a href=#实战案例国际化支付系统>实战案例：国际化支付系统</a></li><li><a href=#测试与维护>测试与维护</a></li></ul></nav></nav><div class=share-box><div class="label mono">✦ share</div><div class=btns><button type=button onclick='window.open("https://twitter.com/intent/tweet?url="+encodeURIComponent(location.href)+"&text="+encodeURIComponent(document.title),"_blank")'>X</button>
+<button type=button onclick=navigator.clipboard&&navigator.clipboard.writeText(location.href)>🔗</button>
+<button type=button onclick=window.print()>✎</button></div></div></aside><article><div class=post-tags><span class=chip style=background:var(--yellow)>技术</span>
+<span class=chip style=background:var(--cream-warm)>#Golang</span><span class=chip style=background:var(--cream-warm)>#国际化</span><span class=chip style=background:var(--cream-warm)>#i18n</span><span class=chip style=background:var(--cream-warm)>#依赖注入</span><span class=chip style=background:var(--cream-warm)>#设计模式</span></div><h1 class=display>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1><div class=byline><div class=who><svg viewBox="0 0 40 40" width="28" height="28" style="display:block"><rect x="2" y="2" width="36" height="36" rx="8" fill="#151415"/><path d="M20 8l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f5dc5a" stroke="#f5dc5a" stroke-width="1" stroke-linejoin="round"/><circle cx="16" cy="30" r="2" fill="#fdfcf5"/><circle cx="24" cy="30" r="2" fill="#fdfcf5"/><circle cx="16.5" cy="30.5" r=".9" fill="#151415"/><circle cx="24.5" cy="30.5" r=".9" fill="#151415"/></svg><div><strong>Billy</strong>
+<span class=handle>@virgoC0der</span></div></div><span class=mute>·</span>
+<span>2025-05-08</span>
+<span class=mute>·</span>
+<span>19 min read</span>
+<span class=mute>·</span>
+<span>4052 words</span></div><div class=cover-wrap><svg viewBox="0 0 240 140" preserveAspectRatio="xMidYMid slice" style="width:100%;height:240px;display:block;background:var(--mint)"><circle cx="120" cy="70" r="40" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><ellipse cx="120" cy="70" rx="40" ry="16" fill="none" stroke="#151415" stroke-width="1.5"/><ellipse cx="120" cy="70" rx="16" ry="40" fill="none" stroke="#151415" stroke-width="1.5"/><path d="M80 70q20-20 40 0t40 0" fill="none" stroke="#151415" stroke-width="1.5"/><text x="60" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">你好</text><text x="170" y="40" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Hi</text><text x="40" y="120" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Hola</text><text x="180" y="120" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">こんにちは</text></svg></div><div class=md><h1 id=使用go实现业务多国本土化策略模式依赖注入与i18n集成实战>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</h1><p>在当今全球化的商业环境中，将产品和服务本土化以适应不同国家和地区的需求已成为企业扩张的必要步骤。然而，从技术角度来看，实现多国本土化不仅仅是简单的翻译问题，更涉及到如何优雅地处理各国在业务逻辑、法规要求、支付方式等方面的差异。本文将探讨如何使用Go语言构建一个灵活的多国本土化框架，通过策略模式、依赖注入和i18n集成来实现可扩展的国际化应用。</p><h2 id=目录>目录</h2><ol><li><a href=#%E4%B8%9A%E5%8A%A1%E5%9B%BD%E9%99%85%E5%8C%96%E7%9A%84%E6%8C%91%E6%88%98>业务国际化的挑战</a></li><li><a href=#%E6%80%BB%E4%BD%93%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1>总体架构设计</a></li><li><a href=#i18n%E5%AE%9E%E7%8E%B0%E6%96%87%E6%9C%AC%E5%92%8C%E6%B6%88%E6%81%AF%E5%9B%BD%E9%99%85%E5%8C%96>i18n实现：文本和消息国际化</a></li><li><a href=#%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F%E5%AE%9E%E7%8E%B0%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%B7%AE%E5%BC%82%E5%8C%96>策略模式实现业务逻辑差异化</a></li><li><a href=#%E4%BD%BF%E7%94%A8%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F%E7%AE%A1%E7%90%86%E5%A4%9A%E5%9B%BD%E7%AD%96%E7%95%A5>使用工厂模式管理多国策略</a></li><li><a href=#%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E4%B8%8Ewire%E9%9B%86%E6%88%90>依赖注入与Wire集成</a></li><li><a href=#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E5%9B%BD%E9%99%85%E5%8C%96%E6%94%AF%E4%BB%98%E7%B3%BB%E7%BB%9F>实战案例：国际化支付系统</a></li><li><a href=#%E6%B5%8B%E8%AF%95%E4%B8%8E%E7%BB%B4%E6%8A%A4>测试与维护</a></li><li><a href=#%E6%80%BB%E7%BB%93%E4%B8%8E%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5>总结与最佳实践</a></li></ol><h2 id=业务国际化的挑战>业务国际化的挑战</h2><p>在开始技术实现之前，让我们先明确多国本土化面临的主要挑战：</p><ol><li><strong>语言和文本翻译</strong> - 最基本的国际化需求，涉及UI、错误信息、通知等</li><li><strong>日期、时间和货币格式</strong> - 不同国家有不同的显示偏好</li><li><strong>业务规则差异</strong> - 各国法规、税务、隐私政策可能有很大不同</li><li><strong>支付方式和流程</strong> - 每个国家流行的支付方式往往不同</li><li><strong>地区特定功能</strong> - 某些功能可能只在特定国家可用</li><li><strong>可扩展性</strong> - 系统需要能够轻松添加新的国家或地区支持</li></ol><p>接下来，我们将探讨如何使用Go的各种设计模式和工具来解决这些挑战。</p><h2 id=总体架构设计>总体架构设计</h2><p>我们的多国本土化框架将基于以下核心原则：</p><ol><li><strong>关注点分离</strong> - 将翻译、业务逻辑、配置等分开处理</li><li><strong>策略模式</strong> - 使用接口定义标准行为，每个国家实现自己的策略</li><li><strong>工厂模式</strong> - 根据国家/地区代码创建适当的策略实现</li><li><strong>依赖注入</strong> - 使用Wire自动组装各个组件</li><li><strong>配置驱动</strong> - 使用配置文件管理国家特定设置</li></ol><p>下面是整体架构的简化视图：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>┌───────────────┐      ┌─────────────────┐      ┌───────────────┐
+</span></span><span style=display:flex><span>│               │      │                 │      │               │
+</span></span><span style=display:flex><span>│  国家检测服务  ├─────►│  策略工厂服务   ├─────►│  具体国家策略  │
+</span></span><span style=display:flex><span>│               │      │                 │      │               │
+</span></span><span style=display:flex><span>└───────┬───────┘      └─────────────────┘      └───────┬───────┘
+</span></span><span style=display:flex><span>        │                                                │
+</span></span><span style=display:flex><span>        │                                                │
+</span></span><span style=display:flex><span>        │                                                │
+</span></span><span style=display:flex><span>┌───────▼───────┐      ┌─────────────────┐      ┌───────▼───────┐
+</span></span><span style=display:flex><span>│               │      │                 │      │               │
+</span></span><span style=display:flex><span>│   i18n服务    │◄─────┤    业务服务     ├─────►│   支付服务    │
+</span></span><span style=display:flex><span>│               │      │                 │      │               │
+</span></span><span style=display:flex><span>└───────────────┘      └─────────────────┘      └───────────────┘
+</span></span></code></pre></div><p>接下来，我们将逐一实现这些组件。</p><h2 id=i18n实现文本和消息国际化>i18n实现：文本和消息国际化</h2><p>Go生态系统中有多个i18n库可供选择，这里我们将使用流行的<code>go-i18n</code>包。</p><p>首先创建项目结构：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>mkdir -p multilingual-service/internal/<span style=color:#9ece6a;font-weight:700>{</span>i18n,country,payment<span style=color:#9ece6a;font-weight:700>}</span>
+</span></span><span style=display:flex><span><span style=color:#9ece6a>cd</span> multilingual-service
 </span></span><span style=display:flex><span>go mod init github.com/yourusername/multilingual-service
 </span></span><span style=display:flex><span>go get -u github.com/nicksnyder/go-i18n/v2/i18n
 </span></span><span style=display:flex><span>go get -u golang.org/x/text/language
-</span></span></code></pre></div><p>接下来，创建一个i18n服务：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/i18n/service.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>i18n</span>
+</span></span></code></pre></div><p>接下来，创建一个i18n服务：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/i18n/service.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> i18n
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;fmt&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;github.com/nicksnyder/go-i18n/v2/i18n&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;golang.org/x/text/language&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;github.com/BurntSushi/toml&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;github.com/nicksnyder/go-i18n/v2/i18n&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;golang.org/x/text/language&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;github.com/BurntSushi/toml&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// I18nService 处理应用程序的国际化</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>I18nService</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>Bundle</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>locale</span> <span style=color:#a6e22e>language</span>.<span style=color:#a6e22e>Tag</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// I18nService 处理应用程序的国际化</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> I18nService <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>	bundle <span style=color:#9ece6a;font-weight:700>*</span>i18n.Bundle
+</span></span><span style=display:flex><span>	locale language.Tag
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewI18nService 创建一个新的i18n服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewI18nService</span>(<span style=color:#a6e22e>defaultLocale</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>I18nService</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建一个bundle并设置默认语言</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>NewBundle</span>(<span style=color:#a6e22e>language</span>.<span style=color:#a6e22e>MustParse</span>(<span style=color:#a6e22e>defaultLocale</span>))
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>RegisterUnmarshalFunc</span>(<span style=color:#e6db74>&#34;toml&#34;</span>, <span style=color:#a6e22e>toml</span>.<span style=color:#a6e22e>Unmarshal</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewI18nService 创建一个新的i18n服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewI18nService</span>(defaultLocale <span style=color:#41a6b5>string</span>) (<span style=color:#9ece6a;font-weight:700>*</span>I18nService, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 创建一个bundle并设置默认语言</span>
+</span></span><span style=display:flex><span>	bundle <span style=color:#9ece6a;font-weight:700>:=</span> i18n.<span style=color:#7aa2f7>NewBundle</span>(language.<span style=color:#7aa2f7>MustParse</span>(defaultLocale))
+</span></span><span style=display:flex><span>	bundle.<span style=color:#7aa2f7>RegisterUnmarshalFunc</span>(<span style=color:#9ece6a>&#34;toml&#34;</span>, toml.Unmarshal)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 加载所有翻译文件</span>
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 这里假设所有翻译文件都位于 locales/ 目录下</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>MustLoadMessageFile</span>(<span style=color:#e6db74>&#34;locales/en.toml&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>MustLoadMessageFile</span>(<span style=color:#e6db74>&#34;locales/zh-CN.toml&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>MustLoadMessageFile</span>(<span style=color:#e6db74>&#34;locales/ja.toml&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 添加更多语言...</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 加载所有翻译文件</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 这里假设所有翻译文件都位于 locales/ 目录下</span>
+</span></span><span style=display:flex><span>	bundle.<span style=color:#7aa2f7>MustLoadMessageFile</span>(<span style=color:#9ece6a>&#34;locales/en.toml&#34;</span>)
+</span></span><span style=display:flex><span>	bundle.<span style=color:#7aa2f7>MustLoadMessageFile</span>(<span style=color:#9ece6a>&#34;locales/zh-CN.toml&#34;</span>)
+</span></span><span style=display:flex><span>	bundle.<span style=color:#7aa2f7>MustLoadMessageFile</span>(<span style=color:#9ece6a>&#34;locales/ja.toml&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 添加更多语言...</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>I18nService</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>bundle</span>: <span style=color:#a6e22e>bundle</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>locale</span>: <span style=color:#a6e22e>language</span>.<span style=color:#a6e22e>MustParse</span>(<span style=color:#a6e22e>defaultLocale</span>),
-</span></span><span style=display:flex><span>	}, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>I18nService{
+</span></span><span style=display:flex><span>		bundle: bundle,
+</span></span><span style=display:flex><span>		locale: language.<span style=color:#7aa2f7>MustParse</span>(defaultLocale),
+</span></span><span style=display:flex><span>	}, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// SetLocale 设置当前语言环境</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>I18nService</span>) <span style=color:#a6e22e>SetLocale</span>(<span style=color:#a6e22e>locale</span> <span style=color:#66d9ef>string</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>locale</span> = <span style=color:#a6e22e>language</span>.<span style=color:#a6e22e>MustParse</span>(<span style=color:#a6e22e>locale</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// SetLocale 设置当前语言环境</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>I18nService) <span style=color:#7aa2f7>SetLocale</span>(locale <span style=color:#41a6b5>string</span>) {
+</span></span><span style=display:flex><span>	s.locale = language.<span style=color:#7aa2f7>MustParse</span>(locale)
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// Translate 翻译指定的消息ID</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>I18nService</span>) <span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>msgID</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>templateData</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizer</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>NewLocalizer</span>(<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>bundle</span>, <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>locale</span>.<span style=color:#a6e22e>String</span>())
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>msg</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>localizer</span>.<span style=color:#a6e22e>Localize</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>LocalizeConfig</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>MessageID</span>:    <span style=color:#a6e22e>msgID</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>TemplateData</span>: <span style=color:#a6e22e>templateData</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// Translate 翻译指定的消息ID</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>I18nService) <span style=color:#7aa2f7>Translate</span>(msgID <span style=color:#41a6b5>string</span>, templateData <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	localizer <span style=color:#9ece6a;font-weight:700>:=</span> i18n.<span style=color:#7aa2f7>NewLocalizer</span>(s.bundle, s.locale.<span style=color:#7aa2f7>String</span>())
+</span></span><span style=display:flex><span>	msg, err <span style=color:#9ece6a;font-weight:700>:=</span> localizer.<span style=color:#7aa2f7>Localize</span>(<span style=color:#9ece6a;font-weight:700>&amp;</span>i18n.LocalizeConfig{
+</span></span><span style=display:flex><span>		MessageID:    msgID,
+</span></span><span style=display:flex><span>		TemplateData: templateData,
 </span></span><span style=display:flex><span>	})
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 如果翻译失败，返回消息ID</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>msgID</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 如果翻译失败，返回消息ID</span>
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> msgID
 </span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>msg</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> msg
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// FormatCurrency 根据当前语言环境格式化货币</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>I18nService</span>) <span style=color:#a6e22e>FormatCurrency</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>, <span style=color:#a6e22e>currency</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 这里可以根据locale实现不同的货币格式化</span>
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 简化实现，生产环境应使用更复杂的逻辑</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>locale</span>.<span style=color:#a6e22e>String</span>() {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;zh-CN&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;¥&#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>formatNumber</span>(<span style=color:#a6e22e>amount</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;ja&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;¥&#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>formatNumber</span>(<span style=color:#a6e22e>amount</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>default</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>currency</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34; &#34;</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>formatNumber</span>(<span style=color:#a6e22e>amount</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// FormatCurrency 根据当前语言环境格式化货币</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>I18nService) <span style=color:#7aa2f7>FormatCurrency</span>(amount <span style=color:#41a6b5>float64</span>, currency <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 这里可以根据locale实现不同的货币格式化</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 简化实现，生产环境应使用更复杂的逻辑</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>switch</span> s.locale.<span style=color:#7aa2f7>String</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;zh-CN&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;¥&#34;</span> <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#7aa2f7>formatNumber</span>(amount)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;ja&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;¥&#34;</span> <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#7aa2f7>formatNumber</span>(amount)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>default</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> currency <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#9ece6a>&#34; &#34;</span> <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#7aa2f7>formatNumber</span>(amount)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 辅助函数：格式化数字</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>formatNumber</span>(<span style=color:#a6e22e>num</span> <span style=color:#66d9ef>float64</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 简化实现</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;%.2f&#34;</span>, <span style=color:#a6e22e>num</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 辅助函数：格式化数字</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>formatNumber</span>(num <span style=color:#41a6b5>float64</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 简化实现</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> fmt.<span style=color:#7aa2f7>Sprintf</span>(<span style=color:#9ece6a>&#34;%.2f&#34;</span>, num)
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>然后，创建一些示例翻译文件：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#a6e22e>locales</span><span style=color:#960050;background-color:#1e0010>/</span><span style=color:#a6e22e>en</span>.<span style=color:#a6e22e>toml</span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>welcome</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>description</span> = <span style=color:#e6db74>&#34;Welcome message&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>other</span> = <span style=color:#e6db74>&#34;Welcome to our service&#34;</span>
+</span></span></code></pre></div><p>然后，创建一些示例翻译文件：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#db4b4b>//</span> locales<span style=color:#db4b4b>/</span>en.toml
+</span></span><span style=display:flex><span>[welcome]
+</span></span><span style=display:flex><span>description = <span style=color:#9ece6a>&#34;Welcome message&#34;</span>
+</span></span><span style=display:flex><span>other = <span style=color:#9ece6a>&#34;Welcome to our service&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>checkout</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>description</span> = <span style=color:#e6db74>&#34;Checkout button text&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>other</span> = <span style=color:#e6db74>&#34;Checkout&#34;</span>
+</span></span><span style=display:flex><span>[checkout]
+</span></span><span style=display:flex><span>description = <span style=color:#9ece6a>&#34;Checkout button text&#34;</span>
+</span></span><span style=display:flex><span>other = <span style=color:#9ece6a>&#34;Checkout&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>payment_success</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>description</span> = <span style=color:#e6db74>&#34;Payment success message&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>other</span> = <span style=color:#e6db74>&#34;Your payment of {{.Amount}} was successful&#34;</span>
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>//</span> <span style=color:#a6e22e>locales</span><span style=color:#960050;background-color:#1e0010>/</span><span style=color:#a6e22e>zh-CN</span>.<span style=color:#a6e22e>toml</span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>welcome</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>description</span> = <span style=color:#e6db74>&#34;欢迎消息&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>other</span> = <span style=color:#e6db74>&#34;欢迎使用我们的服务&#34;</span>
+</span></span><span style=display:flex><span>[payment_success]
+</span></span><span style=display:flex><span>description = <span style=color:#9ece6a>&#34;Payment success message&#34;</span>
+</span></span><span style=display:flex><span>other = <span style=color:#9ece6a>&#34;Your payment of {{.Amount}} was successful&#34;</span>
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-toml data-lang=toml><span style=display:flex><span><span style=color:#db4b4b>//</span> locales<span style=color:#db4b4b>/</span>zh-CN.toml
+</span></span><span style=display:flex><span>[welcome]
+</span></span><span style=display:flex><span>description = <span style=color:#9ece6a>&#34;欢迎消息&#34;</span>
+</span></span><span style=display:flex><span>other = <span style=color:#9ece6a>&#34;欢迎使用我们的服务&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>checkout</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>description</span> = <span style=color:#e6db74>&#34;结账按钮文本&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>other</span> = <span style=color:#e6db74>&#34;去结账&#34;</span>
+</span></span><span style=display:flex><span>[checkout]
+</span></span><span style=display:flex><span>description = <span style=color:#9ece6a>&#34;结账按钮文本&#34;</span>
+</span></span><span style=display:flex><span>other = <span style=color:#9ece6a>&#34;去结账&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>[<span style=color:#a6e22e>payment_success</span>]
-</span></span><span style=display:flex><span><span style=color:#a6e22e>description</span> = <span style=color:#e6db74>&#34;支付成功消息&#34;</span>
-</span></span><span style=display:flex><span><span style=color:#a6e22e>other</span> = <span style=color:#e6db74>&#34;您已成功支付 {{.Amount}}&#34;</span>
-</span></span></code></pre></div><p>这样，我们就建立了基本的文本国际化框架。接下来，我们将实现业务逻辑的国际化。</p><h2 id=策略模式实现业务逻辑差异化>策略模式实现业务逻辑差异化</h2><p>为了处理不同国家的业务逻辑差异，我们将使用策略模式。首先，我们定义一个表示国家策略的接口：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/country/strategy.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>country</span>
+</span></span><span style=display:flex><span>[payment_success]
+</span></span><span style=display:flex><span>description = <span style=color:#9ece6a>&#34;支付成功消息&#34;</span>
+</span></span><span style=display:flex><span>other = <span style=color:#9ece6a>&#34;您已成功支付 {{.Amount}}&#34;</span>
+</span></span></code></pre></div><p>这样，我们就建立了基本的文本国际化框架。接下来，我们将实现业务逻辑的国际化。</p><h2 id=策略模式实现业务逻辑差异化>策略模式实现业务逻辑差异化</h2><p>为了处理不同国家的业务逻辑差异，我们将使用策略模式。首先，我们定义一个表示国家策略的接口：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/country/strategy.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> country
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;fmt&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// Strategy 定义了一个国家特定的业务策略接口</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Strategy</span> <span style=color:#66d9ef>interface</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// GetCountryCode 返回国家代码</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>GetCountryCode</span>() <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// Strategy 定义了一个国家特定的业务策略接口</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> Strategy <span style=color:#9d7cd8>interface</span> {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// GetCountryCode 返回国家代码</span>
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>GetCountryCode</span>() <span style=color:#41a6b5>string</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// GetSupportedPaymentMethods 返回支持的支付方式</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>GetSupportedPaymentMethods</span>() []<span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// GetSupportedPaymentMethods 返回支持的支付方式</span>
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>GetSupportedPaymentMethods</span>() []<span style=color:#41a6b5>string</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// CalculateTax 计算税费</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>CalculateTax</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>) <span style=color:#66d9ef>float64</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// CalculateTax 计算税费</span>
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>CalculateTax</span>(amount <span style=color:#41a6b5>float64</span>) <span style=color:#41a6b5>float64</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// ValidateAddress 验证地址</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>bool</span>, <span style=color:#66d9ef>error</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// ValidateAddress 验证地址</span>
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>ValidateAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) (<span style=color:#41a6b5>bool</span>, <span style=color:#41a6b5>error</span>)
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// GetCountrySpecificSettings 获取国家特定设置</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>GetCountrySpecificSettings</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// GetCountrySpecificSettings 获取国家特定设置</span>
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>GetCountrySpecificSettings</span>() <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// BaseStrategy 提供基本实现，可被具体国家策略继承</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>BaseStrategy</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>CountryCode</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// BaseStrategy 提供基本实现，可被具体国家策略继承</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> BaseStrategy <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    CountryCode <span style=color:#41a6b5>string</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>BaseStrategy</span>) <span style=color:#a6e22e>GetCountryCode</span>() <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>b</span>.<span style=color:#a6e22e>CountryCode</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (b <span style=color:#9ece6a;font-weight:700>*</span>BaseStrategy) <span style=color:#7aa2f7>GetCountryCode</span>() <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> b.CountryCode
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 提供默认实现</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>BaseStrategy</span>) <span style=color:#a6e22e>GetSupportedPaymentMethods</span>() []<span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;credit_card&#34;</span>, <span style=color:#e6db74>&#34;paypal&#34;</span>}
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 提供默认实现</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (b <span style=color:#9ece6a;font-weight:700>*</span>BaseStrategy) <span style=color:#7aa2f7>GetSupportedPaymentMethods</span>() []<span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> []<span style=color:#41a6b5>string</span>{<span style=color:#9ece6a>&#34;credit_card&#34;</span>, <span style=color:#9ece6a>&#34;paypal&#34;</span>}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>BaseStrategy</span>) <span style=color:#a6e22e>CalculateTax</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>) <span style=color:#66d9ef>float64</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 默认不收税</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (b <span style=color:#9ece6a;font-weight:700>*</span>BaseStrategy) <span style=color:#7aa2f7>CalculateTax</span>(amount <span style=color:#41a6b5>float64</span>) <span style=color:#41a6b5>float64</span> {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 默认不收税</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#e0af68>0</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>BaseStrategy</span>) <span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>bool</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 基本地址验证</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>required</span> <span style=color:#f92672>:=</span> []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;street&#34;</span>, <span style=color:#e6db74>&#34;city&#34;</span>, <span style=color:#e6db74>&#34;postcode&#34;</span>, <span style=color:#e6db74>&#34;country&#34;</span>}
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>field</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>required</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>address</span>[<span style=color:#a6e22e>field</span>]; !<span style=color:#a6e22e>ok</span> {
-</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing required field: %s&#34;</span>, <span style=color:#a6e22e>field</span>)
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (b <span style=color:#9ece6a;font-weight:700>*</span>BaseStrategy) <span style=color:#7aa2f7>ValidateAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) (<span style=color:#41a6b5>bool</span>, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 基本地址验证</span>
+</span></span><span style=display:flex><span>    required <span style=color:#9ece6a;font-weight:700>:=</span> []<span style=color:#41a6b5>string</span>{<span style=color:#9ece6a>&#34;street&#34;</span>, <span style=color:#9ece6a>&#34;city&#34;</span>, <span style=color:#9ece6a>&#34;postcode&#34;</span>, <span style=color:#9ece6a>&#34;country&#34;</span>}
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>for</span> _, field <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> required {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>if</span> _, ok <span style=color:#9ece6a;font-weight:700>:=</span> address[field]; !ok {
+</span></span><span style=display:flex><span>            <span style=color:#bb9af7>return</span> <span style=color:#e0af68>false</span>, fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;missing required field: %s&#34;</span>, field)
 </span></span><span style=display:flex><span>        }
 </span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>true</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#e0af68>true</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>b</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>BaseStrategy</span>) <span style=color:#a6e22e>GetCountrySpecificSettings</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{} {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{}
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (b <span style=color:#9ece6a;font-weight:700>*</span>BaseStrategy) <span style=color:#7aa2f7>GetCountrySpecificSettings</span>() <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{} {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>然后，我们为每个国家实现具体策略：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/country/china.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>country</span>
+</span></span></code></pre></div><p>然后，我们为每个国家实现具体策略：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/country/china.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> country
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// ChinaStrategy 实现中国特定的业务策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>ChinaStrategy</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>BaseStrategy</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// ChinaStrategy 实现中国特定的业务策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> ChinaStrategy <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    BaseStrategy
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewChinaStrategy 创建新的中国策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewChinaStrategy</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>ChinaStrategy</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>ChinaStrategy</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>BaseStrategy</span>: <span style=color:#a6e22e>BaseStrategy</span>{
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>CountryCode</span>: <span style=color:#e6db74>&#34;CN&#34;</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewChinaStrategy 创建新的中国策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewChinaStrategy</span>() <span style=color:#9ece6a;font-weight:700>*</span>ChinaStrategy {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>ChinaStrategy{
+</span></span><span style=display:flex><span>        BaseStrategy: BaseStrategy{
+</span></span><span style=display:flex><span>            CountryCode: <span style=color:#9ece6a>&#34;CN&#34;</span>,
 </span></span><span style=display:flex><span>        },
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetSupportedPaymentMethods 重写获取支持的支付方式</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ChinaStrategy</span>) <span style=color:#a6e22e>GetSupportedPaymentMethods</span>() []<span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;alipay&#34;</span>, <span style=color:#e6db74>&#34;wechat_pay&#34;</span>, <span style=color:#e6db74>&#34;union_pay&#34;</span>}
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetSupportedPaymentMethods 重写获取支持的支付方式</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>ChinaStrategy) <span style=color:#7aa2f7>GetSupportedPaymentMethods</span>() []<span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> []<span style=color:#41a6b5>string</span>{<span style=color:#9ece6a>&#34;alipay&#34;</span>, <span style=color:#9ece6a>&#34;wechat_pay&#34;</span>, <span style=color:#9ece6a>&#34;union_pay&#34;</span>}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// CalculateTax 根据中国税法计算税费</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ChinaStrategy</span>) <span style=color:#a6e22e>CalculateTax</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>) <span style=color:#66d9ef>float64</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 简化的增值税计算 (13%)</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>amount</span> <span style=color:#f92672>*</span> <span style=color:#ae81ff>0.13</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// CalculateTax 根据中国税法计算税费</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>ChinaStrategy) <span style=color:#7aa2f7>CalculateTax</span>(amount <span style=color:#41a6b5>float64</span>) <span style=color:#41a6b5>float64</span> {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 简化的增值税计算 (13%)</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> amount <span style=color:#9ece6a;font-weight:700>*</span> <span style=color:#e0af68>0.13</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// ValidateAddress 中国特定的地址验证</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ChinaStrategy</span>) <span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>bool</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 首先检查基本字段</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>valid</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>BaseStrategy</span>.<span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>address</span>); !<span style=color:#a6e22e>valid</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// ValidateAddress 中国特定的地址验证</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>ChinaStrategy) <span style=color:#7aa2f7>ValidateAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) (<span style=color:#41a6b5>bool</span>, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 首先检查基本字段</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> valid, err <span style=color:#9ece6a;font-weight:700>:=</span> s.BaseStrategy.<span style=color:#7aa2f7>ValidateAddress</span>(address); !valid {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#e0af68>false</span>, err
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 检查中国特定字段</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>address</span>[<span style=color:#e6db74>&#34;province&#34;</span>]; !<span style=color:#a6e22e>ok</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing required field for China: province&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 检查中国特定字段</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> _, ok <span style=color:#9ece6a;font-weight:700>:=</span> address[<span style=color:#9ece6a>&#34;province&#34;</span>]; !ok {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#e0af68>false</span>, fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;missing required field for China: province&#34;</span>)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 这里可以添加更多中国特定的地址验证逻辑</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>true</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 这里可以添加更多中国特定的地址验证逻辑</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#e0af68>true</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetCountrySpecificSettings 获取中国特定设置</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ChinaStrategy</span>) <span style=color:#a6e22e>GetCountrySpecificSettings</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{} {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;requires_id_verification&#34;</span>: <span style=color:#66d9ef>true</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;max_transaction_amount&#34;</span>:   <span style=color:#ae81ff>50000.0</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;currency&#34;</span>:                 <span style=color:#e6db74>&#34;CNY&#34;</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetCountrySpecificSettings 获取中国特定设置</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>ChinaStrategy) <span style=color:#7aa2f7>GetCountrySpecificSettings</span>() <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{} {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;requires_id_verification&#34;</span>: <span style=color:#e0af68>true</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;max_transaction_amount&#34;</span>:   <span style=color:#e0af68>50000.0</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;currency&#34;</span>:                 <span style=color:#9ece6a>&#34;CNY&#34;</span>,
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/country/us.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>country</span>
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/country/us.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> country
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// USStrategy 实现美国特定的业务策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>USStrategy</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>BaseStrategy</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// USStrategy 实现美国特定的业务策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> USStrategy <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    BaseStrategy
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewUSStrategy 创建新的美国策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewUSStrategy</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>USStrategy</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>USStrategy</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>BaseStrategy</span>: <span style=color:#a6e22e>BaseStrategy</span>{
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>CountryCode</span>: <span style=color:#e6db74>&#34;US&#34;</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewUSStrategy 创建新的美国策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewUSStrategy</span>() <span style=color:#9ece6a;font-weight:700>*</span>USStrategy {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>USStrategy{
+</span></span><span style=display:flex><span>        BaseStrategy: BaseStrategy{
+</span></span><span style=display:flex><span>            CountryCode: <span style=color:#9ece6a>&#34;US&#34;</span>,
 </span></span><span style=display:flex><span>        },
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetSupportedPaymentMethods 重写获取支持的支付方式</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>USStrategy</span>) <span style=color:#a6e22e>GetSupportedPaymentMethods</span>() []<span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;credit_card&#34;</span>, <span style=color:#e6db74>&#34;paypal&#34;</span>, <span style=color:#e6db74>&#34;apple_pay&#34;</span>, <span style=color:#e6db74>&#34;google_pay&#34;</span>}
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetSupportedPaymentMethods 重写获取支持的支付方式</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>USStrategy) <span style=color:#7aa2f7>GetSupportedPaymentMethods</span>() []<span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> []<span style=color:#41a6b5>string</span>{<span style=color:#9ece6a>&#34;credit_card&#34;</span>, <span style=color:#9ece6a>&#34;paypal&#34;</span>, <span style=color:#9ece6a>&#34;apple_pay&#34;</span>, <span style=color:#9ece6a>&#34;google_pay&#34;</span>}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// CalculateTax 根据美国税法计算税费</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>USStrategy</span>) <span style=color:#a6e22e>CalculateTax</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>) <span style=color:#66d9ef>float64</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 简化的美国销售税计算 (假设为7%)</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>amount</span> <span style=color:#f92672>*</span> <span style=color:#ae81ff>0.07</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// CalculateTax 根据美国税法计算税费</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>USStrategy) <span style=color:#7aa2f7>CalculateTax</span>(amount <span style=color:#41a6b5>float64</span>) <span style=color:#41a6b5>float64</span> {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 简化的美国销售税计算 (假设为7%)</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> amount <span style=color:#9ece6a;font-weight:700>*</span> <span style=color:#e0af68>0.07</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// ValidateAddress 美国特定的地址验证</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>USStrategy</span>) <span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>bool</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 首先检查基本字段</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>valid</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>BaseStrategy</span>.<span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>address</span>); !<span style=color:#a6e22e>valid</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// ValidateAddress 美国特定的地址验证</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>USStrategy) <span style=color:#7aa2f7>ValidateAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) (<span style=color:#41a6b5>bool</span>, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 首先检查基本字段</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> valid, err <span style=color:#9ece6a;font-weight:700>:=</span> s.BaseStrategy.<span style=color:#7aa2f7>ValidateAddress</span>(address); !valid {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#e0af68>false</span>, err
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 检查美国特定字段</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>required</span> <span style=color:#f92672>:=</span> []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;state&#34;</span>, <span style=color:#e6db74>&#34;zip&#34;</span>}
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>field</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>required</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>address</span>[<span style=color:#a6e22e>field</span>]; !<span style=color:#a6e22e>ok</span> {
-</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;missing required field for US: %s&#34;</span>, <span style=color:#a6e22e>field</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 检查美国特定字段</span>
+</span></span><span style=display:flex><span>    required <span style=color:#9ece6a;font-weight:700>:=</span> []<span style=color:#41a6b5>string</span>{<span style=color:#9ece6a>&#34;state&#34;</span>, <span style=color:#9ece6a>&#34;zip&#34;</span>}
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>for</span> _, field <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> required {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>if</span> _, ok <span style=color:#9ece6a;font-weight:700>:=</span> address[field]; !ok {
+</span></span><span style=display:flex><span>            <span style=color:#bb9af7>return</span> <span style=color:#e0af68>false</span>, fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;missing required field for US: %s&#34;</span>, field)
 </span></span><span style=display:flex><span>        }
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 这里可以添加更多美国特定的地址验证逻辑</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>true</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 这里可以添加更多美国特定的地址验证逻辑</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#e0af68>true</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetCountrySpecificSettings 获取美国特定设置</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>USStrategy</span>) <span style=color:#a6e22e>GetCountrySpecificSettings</span>() <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{} {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;requires_id_verification&#34;</span>: <span style=color:#66d9ef>false</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;max_transaction_amount&#34;</span>:   <span style=color:#ae81ff>10000.0</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;currency&#34;</span>:                 <span style=color:#e6db74>&#34;USD&#34;</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetCountrySpecificSettings 获取美国特定设置</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>USStrategy) <span style=color:#7aa2f7>GetCountrySpecificSettings</span>() <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{} {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;requires_id_verification&#34;</span>: <span style=color:#e0af68>false</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;max_transaction_amount&#34;</span>:   <span style=color:#e0af68>10000.0</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;currency&#34;</span>:                 <span style=color:#9ece6a>&#34;USD&#34;</span>,
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>可以按照需要添加更多国家的策略实现。</p><h2 id=使用工厂模式管理多国策略>使用工厂模式管理多国策略</h2><p>现在我们有了多个国家策略，需要一个工厂来创建和管理它们：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/country/factory.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>country</span>
+</span></span></code></pre></div><p>可以按照需要添加更多国家的策略实现。</p><h2 id=使用工厂模式管理多国策略>使用工厂模式管理多国策略</h2><p>现在我们有了多个国家策略，需要一个工厂来创建和管理它们：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/country/factory.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> country
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;fmt&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;sync&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;sync&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// Factory 是一个策略工厂，根据国家代码创建适当的策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Factory</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>strategies</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>Strategy</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>mutex</span>      <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>RWMutex</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// Factory 是一个策略工厂，根据国家代码创建适当的策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> Factory <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    strategies <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]Strategy
+</span></span><span style=display:flex><span>    mutex      sync.RWMutex
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewFactory 创建一个新的策略工厂</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewFactory</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>Factory</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>Factory</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>strategies</span>: make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>Strategy</span>),
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewFactory 创建一个新的策略工厂</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewFactory</span>() <span style=color:#9ece6a;font-weight:700>*</span>Factory {
+</span></span><span style=display:flex><span>    factory <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>Factory{
+</span></span><span style=display:flex><span>        strategies: <span style=color:#9ece6a>make</span>(<span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]Strategy),
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 注册默认策略</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span>.<span style=color:#a6e22e>RegisterStrategy</span>(<span style=color:#a6e22e>NewChinaStrategy</span>())
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span>.<span style=color:#a6e22e>RegisterStrategy</span>(<span style=color:#a6e22e>NewUSStrategy</span>())
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 添加更多国家...</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 注册默认策略</span>
+</span></span><span style=display:flex><span>    factory.<span style=color:#7aa2f7>RegisterStrategy</span>(<span style=color:#7aa2f7>NewChinaStrategy</span>())
+</span></span><span style=display:flex><span>    factory.<span style=color:#7aa2f7>RegisterStrategy</span>(<span style=color:#7aa2f7>NewUSStrategy</span>())
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 添加更多国家...</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>factory</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> factory
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// RegisterStrategy 向工厂注册一个新策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>f</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Factory</span>) <span style=color:#a6e22e>RegisterStrategy</span>(<span style=color:#a6e22e>strategy</span> <span style=color:#a6e22e>Strategy</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>mutex</span>.<span style=color:#a6e22e>Lock</span>()
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>mutex</span>.<span style=color:#a6e22e>Unlock</span>()
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// RegisterStrategy 向工厂注册一个新策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (f <span style=color:#9ece6a;font-weight:700>*</span>Factory) <span style=color:#7aa2f7>RegisterStrategy</span>(strategy Strategy) {
+</span></span><span style=display:flex><span>    f.mutex.<span style=color:#7aa2f7>Lock</span>()
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>defer</span> f.mutex.<span style=color:#7aa2f7>Unlock</span>()
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>strategies</span>[<span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>GetCountryCode</span>()] = <span style=color:#a6e22e>strategy</span>
+</span></span><span style=display:flex><span>    f.strategies[strategy.<span style=color:#7aa2f7>GetCountryCode</span>()] = strategy
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetStrategy 根据国家代码获取策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>f</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Factory</span>) <span style=color:#a6e22e>GetStrategy</span>(<span style=color:#a6e22e>countryCode</span> <span style=color:#66d9ef>string</span>) (<span style=color:#a6e22e>Strategy</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>mutex</span>.<span style=color:#a6e22e>RLock</span>()
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>mutex</span>.<span style=color:#a6e22e>RUnlock</span>()
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetStrategy 根据国家代码获取策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (f <span style=color:#9ece6a;font-weight:700>*</span>Factory) <span style=color:#7aa2f7>GetStrategy</span>(countryCode <span style=color:#41a6b5>string</span>) (Strategy, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    f.mutex.<span style=color:#7aa2f7>RLock</span>()
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>defer</span> f.mutex.<span style=color:#7aa2f7>RUnlock</span>()
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>strategy</span>, <span style=color:#a6e22e>exists</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>strategies</span>[<span style=color:#a6e22e>countryCode</span>]
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>exists</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;no strategy registered for country code: %s&#34;</span>, <span style=color:#a6e22e>countryCode</span>)
+</span></span><span style=display:flex><span>    strategy, exists <span style=color:#9ece6a;font-weight:700>:=</span> f.strategies[countryCode]
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> !exists {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>, fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;no strategy registered for country code: %s&#34;</span>, countryCode)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>strategy</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> strategy, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetAvailableCountries 返回所有可用的国家代码</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>f</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Factory</span>) <span style=color:#a6e22e>GetAvailableCountries</span>() []<span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>mutex</span>.<span style=color:#a6e22e>RLock</span>()
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>mutex</span>.<span style=color:#a6e22e>RUnlock</span>()
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetAvailableCountries 返回所有可用的国家代码</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (f <span style=color:#9ece6a;font-weight:700>*</span>Factory) <span style=color:#7aa2f7>GetAvailableCountries</span>() []<span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>    f.mutex.<span style=color:#7aa2f7>RLock</span>()
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>defer</span> f.mutex.<span style=color:#7aa2f7>RUnlock</span>()
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>countries</span> <span style=color:#f92672>:=</span> make([]<span style=color:#66d9ef>string</span>, <span style=color:#ae81ff>0</span>, len(<span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>strategies</span>))
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#a6e22e>code</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>strategies</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>countries</span> = append(<span style=color:#a6e22e>countries</span>, <span style=color:#a6e22e>code</span>)
+</span></span><span style=display:flex><span>    countries <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9ece6a>make</span>([]<span style=color:#41a6b5>string</span>, <span style=color:#e0af68>0</span>, <span style=color:#9ece6a>len</span>(f.strategies))
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>for</span> code <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> f.strategies {
+</span></span><span style=display:flex><span>        countries = <span style=color:#9ece6a>append</span>(countries, code)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>countries</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> countries
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>这个工厂允许我们动态注册新的国家策略，并根据国家代码获取合适的策略实现。</p><h2 id=依赖注入与wire集成>依赖注入与Wire集成</h2><p>为了管理服务之间的依赖关系，我们将使用Google的Wire库进行依赖注入。首先安装Wire：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>go get -u github.com/google/wire/cmd/wire
-</span></span></code></pre></div><p>然后，创建Wire配置：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/di/wire.go</span>
-</span></span><span style=display:flex><span><span style=color:#75715e>//+build wireinject</span>
+</span></span></code></pre></div><p>这个工厂允许我们动态注册新的国家策略，并根据国家代码获取合适的策略实现。</p><h2 id=依赖注入与wire集成>依赖注入与Wire集成</h2><p>为了管理服务之间的依赖关系，我们将使用Google的Wire库进行依赖注入。首先安装Wire：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>go get -u github.com/google/wire/cmd/wire
+</span></span></code></pre></div><p>然后，创建Wire配置：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/di/wire.go</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>//+build wireinject</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>di</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> di
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/google/wire&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/country&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/i18n&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/payment&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/google/wire&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/country&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/i18n&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/payment&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// ServiceContainer 包含应用程序的所有服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>ServiceContainer</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>I18nService</span>    <span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>I18nService</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>CountryFactory</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>country</span>.<span style=color:#a6e22e>Factory</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>PaymentService</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>payment</span>.<span style=color:#a6e22e>Service</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// ServiceContainer 包含应用程序的所有服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> ServiceContainer <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    I18nService    <span style=color:#9ece6a;font-weight:700>*</span>i18n.I18nService
+</span></span><span style=display:flex><span>    CountryFactory <span style=color:#9ece6a;font-weight:700>*</span>country.Factory
+</span></span><span style=display:flex><span>    PaymentService <span style=color:#9ece6a;font-weight:700>*</span>payment.Service
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// InitializeServices 初始化所有服务并注入依赖</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>InitializeServices</span>(<span style=color:#a6e22e>defaultLocale</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>ServiceContainer</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>wire</span>.<span style=color:#a6e22e>Build</span>(
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 提供I18n服务</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>NewI18nService</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// InitializeServices 初始化所有服务并注入依赖</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>InitializeServices</span>(defaultLocale <span style=color:#41a6b5>string</span>) (<span style=color:#9ece6a;font-weight:700>*</span>ServiceContainer, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    wire.<span style=color:#7aa2f7>Build</span>(
+</span></span><span style=display:flex><span>        <span style=color:#414868;font-style:italic>// 提供I18n服务</span>
+</span></span><span style=display:flex><span>        i18n.NewI18nService,
 </span></span><span style=display:flex><span>        
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 提供国家工厂</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>country</span>.<span style=color:#a6e22e>NewFactory</span>,
+</span></span><span style=display:flex><span>        <span style=color:#414868;font-style:italic>// 提供国家工厂</span>
+</span></span><span style=display:flex><span>        country.NewFactory,
 </span></span><span style=display:flex><span>        
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 提供支付服务</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>wire</span>.<span style=color:#a6e22e>Bind</span>(new(<span style=color:#a6e22e>payment</span>.<span style=color:#a6e22e>CountryStrategyProvider</span>), new(<span style=color:#f92672>*</span><span style=color:#a6e22e>country</span>.<span style=color:#a6e22e>Factory</span>)),
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>payment</span>.<span style=color:#a6e22e>NewService</span>,
+</span></span><span style=display:flex><span>        <span style=color:#414868;font-style:italic>// 提供支付服务</span>
+</span></span><span style=display:flex><span>        wire.<span style=color:#7aa2f7>Bind</span>(<span style=color:#9ece6a>new</span>(payment.CountryStrategyProvider), <span style=color:#9ece6a>new</span>(<span style=color:#9ece6a;font-weight:700>*</span>country.Factory)),
+</span></span><span style=display:flex><span>        payment.NewService,
 </span></span><span style=display:flex><span>        
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 将所有服务组合到容器中</span>
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>wire</span>.<span style=color:#a6e22e>Struct</span>(new(<span style=color:#a6e22e>ServiceContainer</span>), <span style=color:#e6db74>&#34;*&#34;</span>),
+</span></span><span style=display:flex><span>        <span style=color:#414868;font-style:italic>// 将所有服务组合到容器中</span>
+</span></span><span style=display:flex><span>        wire.<span style=color:#7aa2f7>Struct</span>(<span style=color:#9ece6a>new</span>(ServiceContainer), <span style=color:#9ece6a>&#34;*&#34;</span>),
 </span></span><span style=display:flex><span>    )
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>配置好之后，运行Wire来生成注入代码：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>go generate ./internal/di
-</span></span></code></pre></div><p>这将生成一个<code>wire_gen.go</code>文件，包含实际的依赖注入代码。</p><h2 id=实战案例国际化支付系统>实战案例：国际化支付系统</h2><p>现在，我们将实现一个实际的支付服务，它会根据用户所在国家使用不同的支付逻辑：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/payment/service.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>payment</span>
+</span></span></code></pre></div><p>配置好之后，运行Wire来生成注入代码：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=display:flex><span>go generate ./internal/di
+</span></span></code></pre></div><p>这将生成一个<code>wire_gen.go</code>文件，包含实际的依赖注入代码。</p><h2 id=实战案例国际化支付系统>实战案例：国际化支付系统</h2><p>现在，我们将实现一个实际的支付服务，它会根据用户所在国家使用不同的支付逻辑：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/payment/service.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> payment
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;fmt&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;time&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/country&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/i18n&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;time&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/country&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/i18n&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// CountryStrategyProvider 定义了获取国家策略的接口</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>CountryStrategyProvider</span> <span style=color:#66d9ef>interface</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>GetStrategy</span>(<span style=color:#a6e22e>countryCode</span> <span style=color:#66d9ef>string</span>) (<span style=color:#a6e22e>country</span>.<span style=color:#a6e22e>Strategy</span>, <span style=color:#66d9ef>error</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// CountryStrategyProvider 定义了获取国家策略的接口</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> CountryStrategyProvider <span style=color:#9d7cd8>interface</span> {
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>GetStrategy</span>(countryCode <span style=color:#41a6b5>string</span>) (country.Strategy, <span style=color:#41a6b5>error</span>)
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// Service 提供支付服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Service</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>strategyProvider</span> <span style=color:#a6e22e>CountryStrategyProvider</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>i18nService</span>      <span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>I18nService</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// Service 提供支付服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> Service <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    strategyProvider CountryStrategyProvider
+</span></span><span style=display:flex><span>    i18nService      <span style=color:#9ece6a;font-weight:700>*</span>i18n.I18nService
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewService 创建一个新的支付服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewService</span>(<span style=color:#a6e22e>provider</span> <span style=color:#a6e22e>CountryStrategyProvider</span>, <span style=color:#a6e22e>i18nSvc</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>I18nService</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>Service</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>Service</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>strategyProvider</span>: <span style=color:#a6e22e>provider</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>i18nService</span>:      <span style=color:#a6e22e>i18nSvc</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewService 创建一个新的支付服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewService</span>(provider CountryStrategyProvider, i18nSvc <span style=color:#9ece6a;font-weight:700>*</span>i18n.I18nService) <span style=color:#9ece6a;font-weight:700>*</span>Service {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>Service{
+</span></span><span style=display:flex><span>        strategyProvider: provider,
+</span></span><span style=display:flex><span>        i18nService:      i18nSvc,
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// PaymentRequest 表示一个支付请求</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>PaymentRequest</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>CountryCode</span>   <span style=color:#66d9ef>string</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Amount</span>        <span style=color:#66d9ef>float64</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Currency</span>      <span style=color:#66d9ef>string</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>PaymentMethod</span> <span style=color:#66d9ef>string</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Address</span>       <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// PaymentRequest 表示一个支付请求</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> PaymentRequest <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    CountryCode   <span style=color:#41a6b5>string</span>
+</span></span><span style=display:flex><span>    Amount        <span style=color:#41a6b5>float64</span>
+</span></span><span style=display:flex><span>    Currency      <span style=color:#41a6b5>string</span>
+</span></span><span style=display:flex><span>    PaymentMethod <span style=color:#41a6b5>string</span>
+</span></span><span style=display:flex><span>    Address       <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// PaymentResult 表示支付结果</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>PaymentResult</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Success</span>      <span style=color:#66d9ef>bool</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>TransactionID</span> <span style=color:#66d9ef>string</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Message</span>      <span style=color:#66d9ef>string</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>TotalAmount</span>  <span style=color:#66d9ef>float64</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// PaymentResult 表示支付结果</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> PaymentResult <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    Success      <span style=color:#41a6b5>bool</span>
+</span></span><span style=display:flex><span>    TransactionID <span style=color:#41a6b5>string</span>
+</span></span><span style=display:flex><span>    Message      <span style=color:#41a6b5>string</span>
+</span></span><span style=display:flex><span>    TotalAmount  <span style=color:#41a6b5>float64</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// ProcessPayment 处理支付请求</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Service</span>) <span style=color:#a6e22e>ProcessPayment</span>(<span style=color:#a6e22e>req</span> <span style=color:#a6e22e>PaymentRequest</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>PaymentResult</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 获取指定国家的策略</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>strategy</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>strategyProvider</span>.<span style=color:#a6e22e>GetStrategy</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>CountryCode</span>)
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// ProcessPayment 处理支付请求</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>Service) <span style=color:#7aa2f7>ProcessPayment</span>(req PaymentRequest) (<span style=color:#9ece6a;font-weight:700>*</span>PaymentResult, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 获取指定国家的策略</span>
+</span></span><span style=display:flex><span>    strategy, err <span style=color:#9ece6a;font-weight:700>:=</span> s.strategyProvider.<span style=color:#7aa2f7>GetStrategy</span>(req.CountryCode)
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>, err
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 设置I18n服务的语言环境</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>i18nService</span>.<span style=color:#a6e22e>SetLocale</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>CountryCode</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 设置I18n服务的语言环境</span>
+</span></span><span style=display:flex><span>    s.i18nService.<span style=color:#7aa2f7>SetLocale</span>(req.CountryCode)
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 验证地址</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>valid</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>Address</span>); !<span style=color:#a6e22e>valid</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>PaymentResult</span>{
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Success</span>: <span style=color:#66d9ef>false</span>,
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Message</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Address validation failed: %v&#34;</span>, <span style=color:#a6e22e>err</span>),
-</span></span><span style=display:flex><span>        }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 验证地址</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> valid, err <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>ValidateAddress</span>(req.Address); !valid {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>PaymentResult{
+</span></span><span style=display:flex><span>            Success: <span style=color:#e0af68>false</span>,
+</span></span><span style=display:flex><span>            Message: fmt.<span style=color:#7aa2f7>Sprintf</span>(<span style=color:#9ece6a>&#34;Address validation failed: %v&#34;</span>, err),
+</span></span><span style=display:flex><span>        }, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 验证支付方式在该国家是否可用</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>supportedMethods</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>GetSupportedPaymentMethods</span>()
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>methodSupported</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>false</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>method</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>supportedMethods</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>method</span> <span style=color:#f92672>==</span> <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>PaymentMethod</span> {
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>methodSupported</span> = <span style=color:#66d9ef>true</span>
-</span></span><span style=display:flex><span>            <span style=color:#66d9ef>break</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 验证支付方式在该国家是否可用</span>
+</span></span><span style=display:flex><span>    supportedMethods <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>GetSupportedPaymentMethods</span>()
+</span></span><span style=display:flex><span>    methodSupported <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#e0af68>false</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>for</span> _, method <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> supportedMethods {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>if</span> method <span style=color:#9ece6a;font-weight:700>==</span> req.PaymentMethod {
+</span></span><span style=display:flex><span>            methodSupported = <span style=color:#e0af68>true</span>
+</span></span><span style=display:flex><span>            <span style=color:#bb9af7>break</span>
 </span></span><span style=display:flex><span>        }
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>methodSupported</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>PaymentResult</span>{
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Success</span>: <span style=color:#66d9ef>false</span>,
-</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Message</span>: <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;Payment method %s is not supported in %s&#34;</span>, 
-</span></span><span style=display:flex><span>                                 <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>PaymentMethod</span>, <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>GetCountryCode</span>()),
-</span></span><span style=display:flex><span>        }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> !methodSupported {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>PaymentResult{
+</span></span><span style=display:flex><span>            Success: <span style=color:#e0af68>false</span>,
+</span></span><span style=display:flex><span>            Message: fmt.<span style=color:#7aa2f7>Sprintf</span>(<span style=color:#9ece6a>&#34;Payment method %s is not supported in %s&#34;</span>, 
+</span></span><span style=display:flex><span>                                 req.PaymentMethod, strategy.<span style=color:#7aa2f7>GetCountryCode</span>()),
+</span></span><span style=display:flex><span>        }, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 计算税费</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>tax</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>CalculateTax</span>(<span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>Amount</span>)
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>totalAmount</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>Amount</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>tax</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 计算税费</span>
+</span></span><span style=display:flex><span>    tax <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>CalculateTax</span>(req.Amount)
+</span></span><span style=display:flex><span>    totalAmount <span style=color:#9ece6a;font-weight:700>:=</span> req.Amount <span style=color:#9ece6a;font-weight:700>+</span> tax
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 执行特定国家的支付处理</span>
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 这里是简化的实现，实际应用中会有更复杂的支付处理逻辑</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>transactionID</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>generateTransactionID</span>()
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 执行特定国家的支付处理</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 这里是简化的实现，实际应用中会有更复杂的支付处理逻辑</span>
+</span></span><span style=display:flex><span>    transactionID <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#7aa2f7>generateTransactionID</span>()
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 返回成功结果</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>PaymentResult</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Success</span>:      <span style=color:#66d9ef>true</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>TransactionID</span>: <span style=color:#a6e22e>transactionID</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Message</span>:      <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>i18nService</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#e6db74>&#34;payment_success&#34;</span>, <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;Amount&#34;</span>: <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>i18nService</span>.<span style=color:#a6e22e>FormatCurrency</span>(<span style=color:#a6e22e>totalAmount</span>, <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>Currency</span>),
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 返回成功结果</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>PaymentResult{
+</span></span><span style=display:flex><span>        Success:      <span style=color:#e0af68>true</span>,
+</span></span><span style=display:flex><span>        TransactionID: transactionID,
+</span></span><span style=display:flex><span>        Message:      s.i18nService.<span style=color:#7aa2f7>Translate</span>(<span style=color:#9ece6a>&#34;payment_success&#34;</span>, <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>            <span style=color:#9ece6a>&#34;Amount&#34;</span>: s.i18nService.<span style=color:#7aa2f7>FormatCurrency</span>(totalAmount, req.Currency),
 </span></span><span style=display:flex><span>        }),
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>TotalAmount</span>:  <span style=color:#a6e22e>totalAmount</span>,
-</span></span><span style=display:flex><span>    }, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>        TotalAmount:  totalAmount,
+</span></span><span style=display:flex><span>    }, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 生成交易ID</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>generateTransactionID</span>() <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 简化实现</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;TX-%d&#34;</span>, <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Now</span>().<span style=color:#a6e22e>UnixNano</span>())
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 生成交易ID</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>generateTransactionID</span>() <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 简化实现</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> fmt.<span style=color:#7aa2f7>Sprintf</span>(<span style=color:#9ece6a>&#34;TX-%d&#34;</span>, time.<span style=color:#7aa2f7>Now</span>().<span style=color:#7aa2f7>UnixNano</span>())
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>接下来，我们为不同的支付方式实现特定的处理器：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/payment/processor.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>payment</span>
+</span></span></code></pre></div><p>接下来，我们为不同的支付方式实现特定的处理器：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/payment/processor.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> payment
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> <span style=color:#e6db74>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> <span style=color:#9ece6a>&#34;fmt&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// Processor 定义了支付处理器接口</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Processor</span> <span style=color:#66d9ef>interface</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Process</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>, <span style=color:#a6e22e>currency</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>metadata</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>)
-</span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 创建一个处理器工厂，类似于国家策略工厂</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>ProcessorFactory</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>processors</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>Processor</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// Processor 定义了支付处理器接口</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> Processor <span style=color:#9d7cd8>interface</span> {
+</span></span><span style=display:flex><span>    <span style=color:#7aa2f7>Process</span>(amount <span style=color:#41a6b5>float64</span>, currency <span style=color:#41a6b5>string</span>, metadata <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) (<span style=color:#41a6b5>string</span>, <span style=color:#41a6b5>error</span>)
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewProcessorFactory</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>ProcessorFactory</span> {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>ProcessorFactory</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>processors</span>: make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#a6e22e>Processor</span>),
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 创建一个处理器工厂，类似于国家策略工厂</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> ProcessorFactory <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>    processors <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]Processor
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewProcessorFactory</span>() <span style=color:#9ece6a;font-weight:700>*</span>ProcessorFactory {
+</span></span><span style=display:flex><span>    factory <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>ProcessorFactory{
+</span></span><span style=display:flex><span>        processors: <span style=color:#9ece6a>make</span>(<span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]Processor),
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 注册默认处理器</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span>.<span style=color:#a6e22e>Register</span>(<span style=color:#e6db74>&#34;alipay&#34;</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>AlipayProcessor</span>{})
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span>.<span style=color:#a6e22e>Register</span>(<span style=color:#e6db74>&#34;wechat_pay&#34;</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>WeChatPayProcessor</span>{})
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>factory</span>.<span style=color:#a6e22e>Register</span>(<span style=color:#e6db74>&#34;credit_card&#34;</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>CreditCardProcessor</span>{})
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 注册更多处理器...</span>
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 注册默认处理器</span>
+</span></span><span style=display:flex><span>    factory.<span style=color:#7aa2f7>Register</span>(<span style=color:#9ece6a>&#34;alipay&#34;</span>, <span style=color:#9ece6a;font-weight:700>&amp;</span>AlipayProcessor{})
+</span></span><span style=display:flex><span>    factory.<span style=color:#7aa2f7>Register</span>(<span style=color:#9ece6a>&#34;wechat_pay&#34;</span>, <span style=color:#9ece6a;font-weight:700>&amp;</span>WeChatPayProcessor{})
+</span></span><span style=display:flex><span>    factory.<span style=color:#7aa2f7>Register</span>(<span style=color:#9ece6a>&#34;credit_card&#34;</span>, <span style=color:#9ece6a;font-weight:700>&amp;</span>CreditCardProcessor{})
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 注册更多处理器...</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>factory</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> factory
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>f</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ProcessorFactory</span>) <span style=color:#a6e22e>Register</span>(<span style=color:#a6e22e>method</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>processor</span> <span style=color:#a6e22e>Processor</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>processors</span>[<span style=color:#a6e22e>method</span>] = <span style=color:#a6e22e>processor</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (f <span style=color:#9ece6a;font-weight:700>*</span>ProcessorFactory) <span style=color:#7aa2f7>Register</span>(method <span style=color:#41a6b5>string</span>, processor Processor) {
+</span></span><span style=display:flex><span>    f.processors[method] = processor
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>f</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>ProcessorFactory</span>) <span style=color:#a6e22e>GetProcessor</span>(<span style=color:#a6e22e>method</span> <span style=color:#66d9ef>string</span>) (<span style=color:#a6e22e>Processor</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>processor</span>, <span style=color:#a6e22e>exists</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>f</span>.<span style=color:#a6e22e>processors</span>[<span style=color:#a6e22e>method</span>]
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>exists</span> {
-</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;no processor registered for method: %s&#34;</span>, <span style=color:#a6e22e>method</span>)
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (f <span style=color:#9ece6a;font-weight:700>*</span>ProcessorFactory) <span style=color:#7aa2f7>GetProcessor</span>(method <span style=color:#41a6b5>string</span>) (Processor, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    processor, exists <span style=color:#9ece6a;font-weight:700>:=</span> f.processors[method]
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> !exists {
+</span></span><span style=display:flex><span>        <span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>, fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;no processor registered for method: %s&#34;</span>, method)
 </span></span><span style=display:flex><span>    }
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>processor</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> processor, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 具体处理器实现</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>AlipayProcessor</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 具体处理器实现</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> AlipayProcessor <span style=color:#9d7cd8>struct</span>{}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>p</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AlipayProcessor</span>) <span style=color:#a6e22e>Process</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>, <span style=color:#a6e22e>currency</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>metadata</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 实现支付宝支付逻辑</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;alipay-tx-id&#34;</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (p <span style=color:#9ece6a;font-weight:700>*</span>AlipayProcessor) <span style=color:#7aa2f7>Process</span>(amount <span style=color:#41a6b5>float64</span>, currency <span style=color:#41a6b5>string</span>, metadata <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) (<span style=color:#41a6b5>string</span>, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 实现支付宝支付逻辑</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;alipay-tx-id&#34;</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>WeChatPayProcessor</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> WeChatPayProcessor <span style=color:#9d7cd8>struct</span>{}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>p</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>WeChatPayProcessor</span>) <span style=color:#a6e22e>Process</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>, <span style=color:#a6e22e>currency</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>metadata</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 实现微信支付逻辑</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;wechat-tx-id&#34;</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (p <span style=color:#9ece6a;font-weight:700>*</span>WeChatPayProcessor) <span style=color:#7aa2f7>Process</span>(amount <span style=color:#41a6b5>float64</span>, currency <span style=color:#41a6b5>string</span>, metadata <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) (<span style=color:#41a6b5>string</span>, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 实现微信支付逻辑</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;wechat-tx-id&#34;</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>CreditCardProcessor</span> <span style=color:#66d9ef>struct</span>{}
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> CreditCardProcessor <span style=color:#9d7cd8>struct</span>{}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>p</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>CreditCardProcessor</span>) <span style=color:#a6e22e>Process</span>(<span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>, <span style=color:#a6e22e>currency</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>metadata</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 实现信用卡支付逻辑</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;cc-tx-id&#34;</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (p <span style=color:#9ece6a;font-weight:700>*</span>CreditCardProcessor) <span style=color:#7aa2f7>Process</span>(amount <span style=color:#41a6b5>float64</span>, currency <span style=color:#41a6b5>string</span>, metadata <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) (<span style=color:#41a6b5>string</span>, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 实现信用卡支付逻辑</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;cc-tx-id&#34;</span>, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>最后，我们创建主应用程序入口：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// cmd/server/main.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>main</span>
+</span></span></code></pre></div><p>最后，我们创建主应用程序入口：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// cmd/server/main.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> main
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;fmt&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;log&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;net/http&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;log&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;net/http&#34;</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/di&#34;</span>
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/payment&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/di&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/payment&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 初始化服务</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>services</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>di</span>.<span style=color:#a6e22e>InitializeServices</span>(<span style=color:#e6db74>&#34;en&#34;</span>)
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;Failed to initialize services: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>main</span>() {
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 初始化服务</span>
+</span></span><span style=display:flex><span>    services, err <span style=color:#9ece6a;font-weight:700>:=</span> di.<span style=color:#7aa2f7>InitializeServices</span>(<span style=color:#9ece6a>&#34;en&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>        log.<span style=color:#7aa2f7>Fatalf</span>(<span style=color:#9ece6a>&#34;Failed to initialize services: %v&#34;</span>, err)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 打印支持的国家</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;Available countries: %v\
-</span></span></span><span style=display:flex><span><span style=color:#e6db74>&#34;</span>, <span style=color:#a6e22e>services</span>.<span style=color:#a6e22e>CountryFactory</span>.<span style=color:#a6e22e>GetAvailableCountries</span>())
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 打印支持的国家</span>
+</span></span><span style=display:flex><span>    fmt.<span style=color:#7aa2f7>Printf</span>(<span style=color:#9ece6a>&#34;Available countries: %v\
+</span></span></span><span style=display:flex><span><span style=color:#9ece6a>&#34;</span>, services.CountryFactory.<span style=color:#7aa2f7>GetAvailableCountries</span>())
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 创建一个演示用的支付请求</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>paymentReq</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>payment</span>.<span style=color:#a6e22e>PaymentRequest</span>{
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>CountryCode</span>:   <span style=color:#e6db74>&#34;CN&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Amount</span>:        <span style=color:#ae81ff>100.0</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Currency</span>:      <span style=color:#e6db74>&#34;CNY&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>PaymentMethod</span>: <span style=color:#e6db74>&#34;alipay&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Address</span>: <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>{
-</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;street&#34;</span>:   <span style=color:#e6db74>&#34;123 Main St&#34;</span>,
-</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;city&#34;</span>:     <span style=color:#e6db74>&#34;Shanghai&#34;</span>,
-</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;postcode&#34;</span>: <span style=color:#e6db74>&#34;200000&#34;</span>,
-</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;country&#34;</span>:  <span style=color:#e6db74>&#34;CN&#34;</span>,
-</span></span><span style=display:flex><span>            <span style=color:#e6db74>&#34;province&#34;</span>: <span style=color:#e6db74>&#34;Shanghai&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 创建一个演示用的支付请求</span>
+</span></span><span style=display:flex><span>    paymentReq <span style=color:#9ece6a;font-weight:700>:=</span> payment.PaymentRequest{
+</span></span><span style=display:flex><span>        CountryCode:   <span style=color:#9ece6a>&#34;CN&#34;</span>,
+</span></span><span style=display:flex><span>        Amount:        <span style=color:#e0af68>100.0</span>,
+</span></span><span style=display:flex><span>        Currency:      <span style=color:#9ece6a>&#34;CNY&#34;</span>,
+</span></span><span style=display:flex><span>        PaymentMethod: <span style=color:#9ece6a>&#34;alipay&#34;</span>,
+</span></span><span style=display:flex><span>        Address: <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>{
+</span></span><span style=display:flex><span>            <span style=color:#9ece6a>&#34;street&#34;</span>:   <span style=color:#9ece6a>&#34;123 Main St&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#9ece6a>&#34;city&#34;</span>:     <span style=color:#9ece6a>&#34;Shanghai&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#9ece6a>&#34;postcode&#34;</span>: <span style=color:#9ece6a>&#34;200000&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#9ece6a>&#34;country&#34;</span>:  <span style=color:#9ece6a>&#34;CN&#34;</span>,
+</span></span><span style=display:flex><span>            <span style=color:#9ece6a>&#34;province&#34;</span>: <span style=color:#9ece6a>&#34;Shanghai&#34;</span>,
 </span></span><span style=display:flex><span>        },
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 处理支付</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>result</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>services</span>.<span style=color:#a6e22e>PaymentService</span>.<span style=color:#a6e22e>ProcessPayment</span>(<span style=color:#a6e22e>paymentReq</span>)
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;Payment failed: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 处理支付</span>
+</span></span><span style=display:flex><span>    result, err <span style=color:#9ece6a;font-weight:700>:=</span> services.PaymentService.<span style=color:#7aa2f7>ProcessPayment</span>(paymentReq)
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>        log.<span style=color:#7aa2f7>Fatalf</span>(<span style=color:#9ece6a>&#34;Payment failed: %v&#34;</span>, err)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Printf</span>(<span style=color:#e6db74>&#34;Payment result: %+v\
-</span></span></span><span style=display:flex><span><span style=color:#e6db74>&#34;</span>, <span style=color:#a6e22e>result</span>)
+</span></span><span style=display:flex><span>    fmt.<span style=color:#7aa2f7>Printf</span>(<span style=color:#9ece6a>&#34;Payment result: %+v\
+</span></span></span><span style=display:flex><span><span style=color:#9ece6a>&#34;</span>, result)
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 这里可以启动HTTP服务器并提供API</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>HandleFunc</span>(<span style=color:#e6db74>&#34;/api/payment&#34;</span>, <span style=color:#a6e22e>handlePayment</span>(<span style=color:#a6e22e>services</span>))
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatal</span>(<span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>ListenAndServe</span>(<span style=color:#e6db74>&#34;:8080&#34;</span>, <span style=color:#66d9ef>nil</span>))
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 这里可以启动HTTP服务器并提供API</span>
+</span></span><span style=display:flex><span>    http.<span style=color:#7aa2f7>HandleFunc</span>(<span style=color:#9ece6a>&#34;/api/payment&#34;</span>, <span style=color:#7aa2f7>handlePayment</span>(services))
+</span></span><span style=display:flex><span>    log.<span style=color:#7aa2f7>Fatal</span>(http.<span style=color:#7aa2f7>ListenAndServe</span>(<span style=color:#9ece6a>&#34;:8080&#34;</span>, <span style=color:#e0af68>nil</span>))
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>handlePayment</span>(<span style=color:#a6e22e>services</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>di</span>.<span style=color:#a6e22e>ServiceContainer</span>) <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>HandlerFunc</span> {
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>ResponseWriter</span>, <span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Request</span>) {
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 这里实现HTTP API处理逻辑</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>handlePayment</span>(services <span style=color:#9ece6a;font-weight:700>*</span>di.ServiceContainer) http.HandlerFunc {
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>return</span> <span style=color:#9d7cd8>func</span>(w http.ResponseWriter, r <span style=color:#9ece6a;font-weight:700>*</span>http.Request) {
+</span></span><span style=display:flex><span>        <span style=color:#414868;font-style:italic>// 这里实现HTTP API处理逻辑</span>
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h2 id=测试与维护>测试与维护</h2><p>为了确保系统的健壮性，我们应该为关键组件编写测试：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/country/strategy_test.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>country_test</span>
+</span></span></code></pre></div><h2 id=测试与维护>测试与维护</h2><p>为了确保系统的健壮性，我们应该为关键组件编写测试：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/country/strategy_test.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> country_test
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;testing&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;testing&#34;</span>
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#e6db74>&#34;github.com/yourusername/multilingual-service/internal/country&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#9ece6a>&#34;github.com/yourusername/multilingual-service/internal/country&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>TestChinaStrategy</span>(<span style=color:#a6e22e>t</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>testing</span>.<span style=color:#a6e22e>T</span>) {
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>strategy</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>country</span>.<span style=color:#a6e22e>NewChinaStrategy</span>()
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>TestChinaStrategy</span>(t <span style=color:#9ece6a;font-weight:700>*</span>testing.T) {
+</span></span><span style=display:flex><span>    strategy <span style=color:#9ece6a;font-weight:700>:=</span> country.<span style=color:#7aa2f7>NewChinaStrategy</span>()
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 测试国家代码</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>code</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>GetCountryCode</span>(); <span style=color:#a6e22e>code</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;CN&#34;</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;Expected country code CN, got %s&#34;</span>, <span style=color:#a6e22e>code</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 测试国家代码</span>
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> code <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>GetCountryCode</span>(); code <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;CN&#34;</span> {
+</span></span><span style=display:flex><span>        t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;Expected country code CN, got %s&#34;</span>, code)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 测试支付方式</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>methods</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>GetSupportedPaymentMethods</span>()
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> len(<span style=color:#a6e22e>methods</span>) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>3</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;Expected 3 payment methods, got %d&#34;</span>, len(<span style=color:#a6e22e>methods</span>))
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 测试支付方式</span>
+</span></span><span style=display:flex><span>    methods <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>GetSupportedPaymentMethods</span>()
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> <span style=color:#9ece6a>len</span>(methods) <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>3</span> {
+</span></span><span style=display:flex><span>        t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;Expected 3 payment methods, got %d&#34;</span>, <span style=color:#9ece6a>len</span>(methods))
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 测试税费计算</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>tax</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>CalculateTax</span>(<span style=color:#ae81ff>100.0</span>)
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>tax</span> <span style=color:#f92672>!=</span> <span style=color:#ae81ff>13.0</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;Expected tax 13.0, got %f&#34;</span>, <span style=color:#a6e22e>tax</span>)
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 测试税费计算</span>
+</span></span><span style=display:flex><span>    tax <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>CalculateTax</span>(<span style=color:#e0af68>100.0</span>)
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> tax <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>13.0</span> {
+</span></span><span style=display:flex><span>        t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;Expected tax 13.0, got %f&#34;</span>, tax)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#75715e>// 测试地址验证</span>
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>validAddress</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>{
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;street&#34;</span>:   <span style=color:#e6db74>&#34;123 Main St&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;city&#34;</span>:     <span style=color:#e6db74>&#34;Shanghai&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;postcode&#34;</span>: <span style=color:#e6db74>&#34;200000&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;country&#34;</span>:  <span style=color:#e6db74>&#34;CN&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;province&#34;</span>: <span style=color:#e6db74>&#34;Shanghai&#34;</span>,
+</span></span><span style=display:flex><span>    <span style=color:#414868;font-style:italic>// 测试地址验证</span>
+</span></span><span style=display:flex><span>    validAddress <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>{
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;street&#34;</span>:   <span style=color:#9ece6a>&#34;123 Main St&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;city&#34;</span>:     <span style=color:#9ece6a>&#34;Shanghai&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;postcode&#34;</span>: <span style=color:#9ece6a>&#34;200000&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;country&#34;</span>:  <span style=color:#9ece6a>&#34;CN&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;province&#34;</span>: <span style=color:#9ece6a>&#34;Shanghai&#34;</span>,
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>valid</span>, <span style=color:#a6e22e>_</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>validAddress</span>); !<span style=color:#a6e22e>valid</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Error</span>(<span style=color:#e6db74>&#34;Expected valid address validation&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> valid, _ <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>ValidateAddress</span>(validAddress); !valid {
+</span></span><span style=display:flex><span>        t.<span style=color:#7aa2f7>Error</span>(<span style=color:#9ece6a>&#34;Expected valid address validation&#34;</span>)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#a6e22e>invalidAddress</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>{
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;street&#34;</span>:   <span style=color:#e6db74>&#34;123 Main St&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;city&#34;</span>:     <span style=color:#e6db74>&#34;Shanghai&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;postcode&#34;</span>: <span style=color:#e6db74>&#34;200000&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#e6db74>&#34;country&#34;</span>:  <span style=color:#e6db74>&#34;CN&#34;</span>,
-</span></span><span style=display:flex><span>        <span style=color:#75715e>// 缺少province字段</span>
+</span></span><span style=display:flex><span>    invalidAddress <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>{
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;street&#34;</span>:   <span style=color:#9ece6a>&#34;123 Main St&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;city&#34;</span>:     <span style=color:#9ece6a>&#34;Shanghai&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;postcode&#34;</span>: <span style=color:#9ece6a>&#34;200000&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#9ece6a>&#34;country&#34;</span>:  <span style=color:#9ece6a>&#34;CN&#34;</span>,
+</span></span><span style=display:flex><span>        <span style=color:#414868;font-style:italic>// 缺少province字段</span>
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>    
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>valid</span>, <span style=color:#a6e22e>_</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strategy</span>.<span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>invalidAddress</span>); <span style=color:#a6e22e>valid</span> {
-</span></span><span style=display:flex><span>        <span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Error</span>(<span style=color:#e6db74>&#34;Expected invalid address validation&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#bb9af7>if</span> valid, _ <span style=color:#9ece6a;font-weight:700>:=</span> strategy.<span style=color:#7aa2f7>ValidateAddress</span>(invalidAddress); valid {
+</span></span><span style=display:flex><span>        t.<span style=color:#7aa2f7>Error</span>(<span style=color:#9ece6a>&#34;Expected invalid address validation&#34;</span>)
 </span></span><span style=display:flex><span>    }
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>此外，我们应该考虑以下几个方面来维护和扩展系统：</p><ol><li><strong>监控和日志</strong> - 添加日志记录和监控，特别是对于不同国家的支付处理情况</li><li><strong>功能标志</strong> - 使用功能标志系统来逐步推出新国家或功能</li><li><strong>自动化测试</strong> - 实现端到端测试，模拟不同国家的用户行为</li><li><strong>文档</strong> - 维护详细的文档，说明每个国家的特殊处理和规则</li></ol></div></body></html>
+</span></span></code></pre></div><p>此外，我们应该考虑以下几个方面来维护和扩展系统：</p><ol><li><strong>监控和日志</strong> - 添加日志记录和监控，特别是对于不同国家的支付处理情况</li><li><strong>功能标志</strong> - 使用功能标志系统来逐步推出新国家或功能</li><li><strong>自动化测试</strong> - 实现端到端测试，模拟不同国家的用户行为</li><li><strong>文档</strong> - 维护详细的文档，说明每个国家的特殊处理和规则</li></ol></div><div class=post-foot><svg viewBox="0 0 140 140" width="90" height="90" style="display:block"><ellipse cx="70" cy="128" rx="38" ry="4" fill="rgba(0,0,0,0.15)"/><g><rect x="52" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><rect x="78" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><ellipse cx="57" cy="122" rx="8" ry="3.5" fill="#151415"/><ellipse cx="83" cy="122" rx="8" ry="3.5" fill="#151415"/><path d="M32 78q0-30 38-30t38 30v28q0 10-12 10H44q-12 0-12-10z" fill="#e5d7ff" stroke="#151415" stroke-width="2.6" stroke-linejoin="round"/><path d="M55 90q15 14 30 0v22q-15 4-30 0z" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><path d="M36 84q10 12 20 8" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><path d="M104 84Q94 96 84 92" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><rect x="50" y="88" width="40" height="16" rx="2" fill="#151415" stroke="#151415" stroke-width="2"/><rect x="52" y="90" width="36" height="10" fill="#b5f26a"/><text x="54" y="98" font-family="JetBrains Mono, monospace" font-size="6" fill="#151415" font-weight="700">go run.</text><ellipse cx="58" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><ellipse cx="82" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><circle cx="59" cy="76" r="3.2" fill="#151415"/><circle cx="83" cy="76" r="3.2" fill="#151415"/><circle cx="60.5" cy="74.5" r="1.1" fill="#fdfcf5"/><circle cx="84.5" cy="74.5" r="1.1" fill="#fdfcf5"/><ellipse cx="48" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><ellipse cx="92" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><path d="M64 86q6 6 12 0" fill="none" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 32)"><path d="M0-18 4-6H16L6 2l4 12L0 6-10 14-6 2-16-6H-4z" fill="#f5dc5a" stroke="#151415" stroke-width="2.2" stroke-linejoin="round"/><circle cx="-.5" cy="-1" r="1.5" fill="#151415"/></g><path d="M70 48V42" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 102)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#151415" text-anchor="middle"><text y="0">♍</text></g></g><g opacity=".8"><path d="M20 36l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ef7065" stroke="#151415" stroke-width="1.2"/><path d="M118 24l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#f5dc5a" stroke="#151415" stroke-width="1.2"/></g></svg><div style=flex:1><div class=t>觉得这篇有用？</div><div class=s>订阅 RSS 或去 GitHub 给 <code>go-mcp</code> 点个 ⭐</div><div class=ctas><a class="cta ink" href=https://github.com/virgoC0der target=_blank rel=noopener>GitHub ⭐ ↗</a>
+<a class="cta paper" href=/index.xml>RSS 订阅 ↗</a></div></div></div><div class=prev-next><a class=card href=/posts/go-mcp-claude/><div class=kicker>← prev</div><div class=title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践</div></a><a class="card next" href=/posts/go-i18n-localization/><div class=kicker>next →</div><div class=title>使用Go实现业务的多国本土化适配方案</div></a></div></article><aside class=side-meta><div class=front-matter><div class=head>◊ front matter</div><div class=yaml><div><span class=k>title:</span> go-multilingual-localization</div><div><span class=k>date:</span> 2025-05-08</div><div><span class=k>author:</span> Billy</div><div><span class=k>words:</span> ~4.0k</div><div><span class=k>tags:</span></div><div style=padding-left:12px><div>- Golang</div><div>- 国际化</div><div>- i18n</div><div>- 依赖注入</div><div>- 设计模式</div></div><div><span class=k>categories:</span></div><div style=padding-left:12px><div>- 技术</div><div>- 编程</div></div></div></div><div class=reading-progress><div class=label>✦ reading</div><div class=text>当前进度 — 翻到 0%，还需 ~10 分钟</div><div class=bar><div></div></div></div></aside></div></div></main><footer class=site-foot><div class=wrap><div><div class=brand-row><svg viewBox="0 0 140 140" width="56" height="56" style="display:block"><ellipse cx="70" cy="128" rx="38" ry="4" fill="rgba(0,0,0,0.15)"/><g><rect x="52" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><rect x="78" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><ellipse cx="57" cy="122" rx="8" ry="3.5" fill="#151415"/><ellipse cx="83" cy="122" rx="8" ry="3.5" fill="#151415"/><path d="M32 78q0-30 38-30t38 30v28q0 10-12 10H44q-12 0-12-10z" fill="#e5d7ff" stroke="#151415" stroke-width="2.6" stroke-linejoin="round"/><path d="M55 90q15 14 30 0v22q-15 4-30 0z" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><path d="M34 80q-12-8-8-22 2-4 6-2" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="26" cy="56" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><path d="M106 86q12 0 14 10" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="120" cy="96" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><ellipse cx="58" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><ellipse cx="82" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><circle cx="59" cy="76" r="3.2" fill="#151415"/><circle cx="83" cy="76" r="3.2" fill="#151415"/><circle cx="60.5" cy="74.5" r="1.1" fill="#fdfcf5"/><circle cx="84.5" cy="74.5" r="1.1" fill="#fdfcf5"/><ellipse cx="48" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><ellipse cx="92" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><path d="M64 86q6 6 12 0" fill="none" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 32)"><path d="M0-18 4-6H16L6 2l4 12L0 6-10 14-6 2-16-6H-4z" fill="#f5dc5a" stroke="#151415" stroke-width="2.2" stroke-linejoin="round"/><circle cx="-.5" cy="-1" r="1.5" fill="#151415"/></g><path d="M70 48V42" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 102)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#151415" text-anchor="middle"><text y="0">♍</text></g></g><g opacity=".8"><path d="M20 36l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ef7065" stroke="#151415" stroke-width="1.2"/><path d="M118 24l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#f5dc5a" stroke="#151415" stroke-width="1.2"/></g></svg><div><div class=title>Billy's Blog</div><div class=info>built with Hugo · hosted on GitHub Pages</div></div></div><div class=quote-mono><span class=c>// </span>"First, solve the problem. Then, write the code."<br><span style=opacity:.5>— John Johnson</span></div></div><div><div class=col-head>Pages</div><a href=/>/~</a>
+<a href=/posts/>/posts</a>
+<a href=/tags/>/tags</a>
+<a href=/about/>/about</a>
+<a href=/now/>/now</a></div><div><div class=col-head>Elsewhere</div><a href=https://github.com/virgoC0der target=_blank rel=noopener>GitHub ↗</a>
+<a href=mailto:billychen826@gmail.com>Email ↗</a>
+<a href=/index.xml>RSS ↗</a></div><div><div class=col-head>Colophon</div><div class=row>Inter + Fraunces + JetBrains Mono</div><div class=row>© 2026 Billy (@virgoC0der)</div></div></div><div class=tag-strip><span>✦ made with ♥ and too much coffee · Billy · ♍ virgo edition</span>
+<span>v0.3.1 · hugo</span></div></footer><script>(function(){var t=document.querySelector(".reading-progress .bar > div"),n=document.querySelector(".reading-progress .text");if(!t)return;function e(){var a,e=document.documentElement,o=document.body,r=e.scrollTop||o.scrollTop,i=(e.scrollHeight||o.scrollHeight)-e.clientHeight,s=i>0?Math.min(100,Math.max(0,r/i*100)):0;t.style.width=s.toFixed(0)+"%",n&&(a=Math.max(0,Math.round((100-s)/10)),n.textContent="当前进度 — 翻到 "+s.toFixed(0)+"%，还需 ~"+a+" 分钟")}window.addEventListener("scroll",e,{passive:!0}),window.addEventListener("resize",e),e()})()</script></body></html>

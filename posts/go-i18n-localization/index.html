@@ -1,587 +1,610 @@
 <!doctype html><html lang=zh-CN><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>使用Go实现业务的多国本土化适配方案 | Billy's Blog</title>
-<link rel=stylesheet href=/css/main.css><script defer src=https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js></script></head><body><div class="prose prose-lg max-w-none p-8 font-sans"><button onclick=history.back() class="mb-6 px-4 py-2 bg-white border-2 border-black font-bold hover:bg-black hover:text-white transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none cursor-pointer">
-← 返回</button><h1 class="text-4xl font-black mb-4">使用Go实现业务的多国本土化适配方案</h1><div class="border-b-2 border-black mb-8"></div><h1 id=使用go实现业务的多国本土化适配方案>使用Go实现业务的多国本土化适配方案</h1><p>在当今全球化的市场环境中，将产品或服务扩展到不同国家和地区已经成为众多企业的重要战略。然而，这一过程中面临的本土化挑战不容忽视。本文将探讨如何利用Go语言构建一套灵活、高效的多国本土化适配系统，从架构设计到具体实现，全方位解析国际化(i18n)与本土化(l10n)的最佳实践。</p><h2 id=1-理解i18n与l10n的区别>1. 理解i18n与l10n的区别</h2><p>在开始之前，我们需要明确两个概念：</p><ul><li><strong>国际化(Internationalization, i18n)</strong>: 是指设计和开发产品时，使其能够适应不同的语言和地区，而无需进行工程上的修改。</li><li><strong>本土化(Localization, l10n)</strong>: 是指使产品适应特定地区或语言的过程，包括翻译文本、调整日期/时间格式、货币符号等。</li></ul><p>简单来说，国际化是一次性的工程设计，而本土化是针对每个市场的持续适配过程。</p><h2 id=2-go语言的本土化工具生态>2. Go语言的本土化工具生态</h2><p>Go语言有丰富的本土化工具生态系统，以下是几个流行的库：</p><ul><li><a href=https://github.com/nicksnyder/go-i18n>go-i18n</a>：强大的i18n库，支持复数形式和消息格式。</li><li><a href=https://github.com/leonelquinteros/gotext>gotext</a>：Go的gettext支持。</li><li><a href=https://github.com/m1/go-localize>go-localize</a>：简单易用的本土化库。</li><li><a href=https://github.com/projectfluent/fluent-go>fluent</a>：Mozilla的Fluent本土化系统的Go实现。</li></ul><p>在本文中，我们将主要使用<code>go-i18n</code>构建我们的多国本土化系统。</p><h2 id=3-构建多国本土化架构>3. 构建多国本土化架构</h2><h3 id=31-整体架构设计>3.1 整体架构设计</h3><p>一个完善的多国本土化系统应当具备以下特点：</p><ul><li>易于扩展：添加新语言不需要修改代码</li><li>高性能：翻译查找应该是高效的</li><li>灵活性：支持各种本土化需求，从简单文本到复杂内容</li><li>开发友好：对开发人员友好，便于维护</li></ul><p>以下是我们要构建的架构图：</p><pre tabindex=0><code>┌─────────────────┐      ┌──────────────────┐
-│ HTTP/API 请求   │─────▶│ 语言检测中间件   │
-└─────────────────┘      └──────────┬───────┘
-                                    │
-                                    ▼
-┌─────────────────┐      ┌──────────────────┐
-│ 翻译文件        │◀────▶│ 本土化服务       │
-│ (JSON/YAML)     │      │                  │
-└─────────────────┘      └──────────┬───────┘
-                                    │
-                                    ▼
-┌─────────────────┐      ┌──────────────────┐
-│ 缓存层          │◀────▶│ 业务逻辑层       │
-└─────────────────┘      └──────────────────┘
-</code></pre><h3 id=32-项目结构>3.2 项目结构</h3><pre tabindex=0><code>project/
-├── cmd/
-│   └── server/
-│       └── main.go
-├── internal/
-│   ├── config/
-│   │   └── config.go
-│   ├── handler/
-│   │   └── handler.go
-│   ├── middleware/
-│   │   └── locale.go
-│   ├── model/
-│   │   └── model.go
-│   └── service/
-│       └── localization.go
-├── locales/
-│   ├── en.json
-│   ├── zh-CN.json
-│   ├── ja.json
-│   └── ...
-├── go.mod
-└── go.sum
-</code></pre><h2 id=4-实现关键组件>4. 实现关键组件</h2><h3 id=41-配置国际化服务>4.1 配置国际化服务</h3><p>首先，我们来实现本土化服务的核心组件：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/service/localization.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>service</span>
+<meta name=description content="后端开发者 · Go / AI / MCP · 实验室笔记"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.css></head><body><header class=topbar><div class=topbar-url><div class=topbar-dots><span></span><span></span><span></span></div><div class=topbar-addr><span class=mute>https://</span>
+<span class=brand>billy.dev</span>
+<span class=mute>/posts/go-i18n-localization/</span>
+<span class=cmdk>⌘K</span></div></div><nav class=tabs-row aria-label=Main><a class=tabs-logo href=/><svg viewBox="0 0 40 40" width="32" height="32" style="display:block"><rect x="2" y="2" width="36" height="36" rx="8" fill="#151415"/><path d="M20 8l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f5dc5a" stroke="#f5dc5a" stroke-width="1" stroke-linejoin="round"/><circle cx="16" cy="30" r="2" fill="#fdfcf5"/><circle cx="24" cy="30" r="2" fill="#fdfcf5"/><circle cx="16.5" cy="30.5" r=".9" fill="#151415"/><circle cx="24.5" cy="30.5" r=".9" fill="#151415"/></svg><div><div class="display title">Billy's Blog</div><div class="mono handle">@virgoC0der</div></div></a><a class=tab href=/ style=--tab-color:var(--yellow)><span class=slash>/</span>~
+</a><a class="tab active" href=/posts/ style=--tab-color:var(--coral-soft)><span class=slash>/</span>posts
+</a><a class=tab href=/tags/ style=--tab-color:var(--mint)><span class=slash>/</span>tags
+</a><a class=tab href=/about/ style=--tab-color:var(--lavender)><span class=slash>/</span>about
+</a><a class=tab href=/now/ style=--tab-color:var(--peach)><span class=slash>/</span>now</a><div class=tabs-fill></div><a class=tab-rss href=/index.xml>RSS ↗</a></nav></header><main><div class=page-wrap><div class="breadcrumb mono"><a href=/>~</a> / <a href=/posts/>posts</a> / <strong>go-i18n-localization.md</strong></div><div class=post-detail><aside class=toc><div class=head>◊ table of contents</div><nav class=toc-list id=toc><nav id=TableOfContents><ul><li><a href=#1-理解i18n与l10n的区别>1. 理解i18n与l10n的区别</a></li><li><a href=#2-go语言的本土化工具生态>2. Go语言的本土化工具生态</a></li><li><a href=#3-构建多国本土化架构>3. 构建多国本土化架构</a><ul><li><a href=#31-整体架构设计>3.1 整体架构设计</a></li><li><a href=#32-项目结构>3.2 项目结构</a></li></ul></li><li><a href=#4-实现关键组件>4. 实现关键组件</a><ul><li><a href=#41-配置国际化服务>4.1 配置国际化服务</a></li><li><a href=#42-实现语言检测中间件>4.2 实现语言检测中间件</a></li><li><a href=#43-配置翻译文件>4.3 配置翻译文件</a></li><li><a href=#44-处理特定国家的逻辑>4.4 处理特定国家的逻辑</a></li><li><a href=#45-主程序入口>4.5 主程序入口</a></li></ul></li><li><a href=#5-高级本土化策略>5. 高级本土化策略</a><ul><li><a href=#51-内容差异化>5.1 内容差异化</a></li><li><a href=#52-图片和资源本土化>5.2 图片和资源本土化</a></li><li><a href=#53-动态加载翻译>5.3 动态加载翻译</a></li></ul></li><li><a href=#6-性能优化>6. 性能优化</a><ul><li><a href=#61-翻译缓存>6.1 翻译缓存</a></li><li><a href=#62-并发处理>6.2 并发处理</a></li></ul></li><li><a href=#7-测试多国本土化>7. 测试多国本土化</a></li><li><a href=#8-部署考虑>8. 部署考虑</a><ul><li><a href=#81-cdn配置>8.1 CDN配置</a></li><li><a href=#82-docker部署>8.2 Docker部署</a></li></ul></li><li><a href=#9-最佳实践与总结>9. 最佳实践与总结</a><ul><li><a href=#91-最佳实践>9.1 最佳实践</a></li><li><a href=#92-总结>9.2 总结</a></li></ul></li></ul></nav></nav><div class=share-box><div class="label mono">✦ share</div><div class=btns><button type=button onclick='window.open("https://twitter.com/intent/tweet?url="+encodeURIComponent(location.href)+"&text="+encodeURIComponent(document.title),"_blank")'>X</button>
+<button type=button onclick=navigator.clipboard&&navigator.clipboard.writeText(location.href)>🔗</button>
+<button type=button onclick=window.print()>✎</button></div></div></aside><article><div class=post-tags><span class=chip style=background:var(--yellow)>技术</span>
+<span class=chip style=background:var(--cream-warm)>#Golang</span><span class=chip style=background:var(--cream-warm)>#国际化</span><span class=chip style=background:var(--cream-warm)>#本土化</span><span class=chip style=background:var(--cream-warm)>#i18n</span><span class=chip style=background:var(--cream-warm)>#l10n</span></div><h1 class=display>使用Go实现业务的多国本土化适配方案</h1><div class=byline><div class=who><svg viewBox="0 0 40 40" width="28" height="28" style="display:block"><rect x="2" y="2" width="36" height="36" rx="8" fill="#151415"/><path d="M20 8l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f5dc5a" stroke="#f5dc5a" stroke-width="1" stroke-linejoin="round"/><circle cx="16" cy="30" r="2" fill="#fdfcf5"/><circle cx="24" cy="30" r="2" fill="#fdfcf5"/><circle cx="16.5" cy="30.5" r=".9" fill="#151415"/><circle cx="24.5" cy="30.5" r=".9" fill="#151415"/></svg><div><strong>Billy</strong>
+<span class=handle>@virgoC0der</span></div></div><span class=mute>·</span>
+<span>2025-05-08</span>
+<span class=mute>·</span>
+<span>19 min read</span>
+<span class=mute>·</span>
+<span>4153 words</span></div><div class=cover-wrap><svg viewBox="0 0 240 140" preserveAspectRatio="xMidYMid slice" style="width:100%;height:240px;display:block;background:var(--mint)"><circle cx="120" cy="70" r="40" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><ellipse cx="120" cy="70" rx="40" ry="16" fill="none" stroke="#151415" stroke-width="1.5"/><ellipse cx="120" cy="70" rx="16" ry="40" fill="none" stroke="#151415" stroke-width="1.5"/><path d="M80 70q20-20 40 0t40 0" fill="none" stroke="#151415" stroke-width="1.5"/><text x="60" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">你好</text><text x="170" y="40" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Hi</text><text x="40" y="120" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Hola</text><text x="180" y="120" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">こんにちは</text></svg></div><div class=md><h1 id=使用go实现业务的多国本土化适配方案>使用Go实现业务的多国本土化适配方案</h1><p>在当今全球化的市场环境中，将产品或服务扩展到不同国家和地区已经成为众多企业的重要战略。然而，这一过程中面临的本土化挑战不容忽视。本文将探讨如何利用Go语言构建一套灵活、高效的多国本土化适配系统，从架构设计到具体实现，全方位解析国际化(i18n)与本土化(l10n)的最佳实践。</p><h2 id=1-理解i18n与l10n的区别>1. 理解i18n与l10n的区别</h2><p>在开始之前，我们需要明确两个概念：</p><ul><li><strong>国际化(Internationalization, i18n)</strong>: 是指设计和开发产品时，使其能够适应不同的语言和地区，而无需进行工程上的修改。</li><li><strong>本土化(Localization, l10n)</strong>: 是指使产品适应特定地区或语言的过程，包括翻译文本、调整日期/时间格式、货币符号等。</li></ul><p>简单来说，国际化是一次性的工程设计，而本土化是针对每个市场的持续适配过程。</p><h2 id=2-go语言的本土化工具生态>2. Go语言的本土化工具生态</h2><p>Go语言有丰富的本土化工具生态系统，以下是几个流行的库：</p><ul><li><a href=https://github.com/nicksnyder/go-i18n>go-i18n</a>：强大的i18n库，支持复数形式和消息格式。</li><li><a href=https://github.com/leonelquinteros/gotext>gotext</a>：Go的gettext支持。</li><li><a href=https://github.com/m1/go-localize>go-localize</a>：简单易用的本土化库。</li><li><a href=https://github.com/projectfluent/fluent-go>fluent</a>：Mozilla的Fluent本土化系统的Go实现。</li></ul><p>在本文中，我们将主要使用<code>go-i18n</code>构建我们的多国本土化系统。</p><h2 id=3-构建多国本土化架构>3. 构建多国本土化架构</h2><h3 id=31-整体架构设计>3.1 整体架构设计</h3><p>一个完善的多国本土化系统应当具备以下特点：</p><ul><li>易于扩展：添加新语言不需要修改代码</li><li>高性能：翻译查找应该是高效的</li><li>灵活性：支持各种本土化需求，从简单文本到复杂内容</li><li>开发友好：对开发人员友好，便于维护</li></ul><p>以下是我们要构建的架构图：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>┌─────────────────┐      ┌──────────────────┐
+</span></span><span style=display:flex><span>│ HTTP/API 请求   │─────▶│ 语言检测中间件   │
+</span></span><span style=display:flex><span>└─────────────────┘      └──────────┬───────┘
+</span></span><span style=display:flex><span>                                    │
+</span></span><span style=display:flex><span>                                    ▼
+</span></span><span style=display:flex><span>┌─────────────────┐      ┌──────────────────┐
+</span></span><span style=display:flex><span>│ 翻译文件        │◀────▶│ 本土化服务       │
+</span></span><span style=display:flex><span>│ (JSON/YAML)     │      │                  │
+</span></span><span style=display:flex><span>└─────────────────┘      └──────────┬───────┘
+</span></span><span style=display:flex><span>                                    │
+</span></span><span style=display:flex><span>                                    ▼
+</span></span><span style=display:flex><span>┌─────────────────┐      ┌──────────────────┐
+</span></span><span style=display:flex><span>│ 缓存层          │◀────▶│ 业务逻辑层       │
+</span></span><span style=display:flex><span>└─────────────────┘      └──────────────────┘
+</span></span></code></pre></div><h3 id=32-项目结构>3.2 项目结构</h3><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback><span style=display:flex><span>project/
+</span></span><span style=display:flex><span>├── cmd/
+</span></span><span style=display:flex><span>│   └── server/
+</span></span><span style=display:flex><span>│       └── main.go
+</span></span><span style=display:flex><span>├── internal/
+</span></span><span style=display:flex><span>│   ├── config/
+</span></span><span style=display:flex><span>│   │   └── config.go
+</span></span><span style=display:flex><span>│   ├── handler/
+</span></span><span style=display:flex><span>│   │   └── handler.go
+</span></span><span style=display:flex><span>│   ├── middleware/
+</span></span><span style=display:flex><span>│   │   └── locale.go
+</span></span><span style=display:flex><span>│   ├── model/
+</span></span><span style=display:flex><span>│   │   └── model.go
+</span></span><span style=display:flex><span>│   └── service/
+</span></span><span style=display:flex><span>│       └── localization.go
+</span></span><span style=display:flex><span>├── locales/
+</span></span><span style=display:flex><span>│   ├── en.json
+</span></span><span style=display:flex><span>│   ├── zh-CN.json
+</span></span><span style=display:flex><span>│   ├── ja.json
+</span></span><span style=display:flex><span>│   └── ...
+</span></span><span style=display:flex><span>├── go.mod
+</span></span><span style=display:flex><span>└── go.sum
+</span></span></code></pre></div><h2 id=4-实现关键组件>4. 实现关键组件</h2><h3 id=41-配置国际化服务>4.1 配置国际化服务</h3><p>首先，我们来实现本土化服务的核心组件：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/service/localization.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> service
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;encoding/json&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;fmt&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;os&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;path/filepath&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;sync&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;encoding/json&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;fmt&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;os&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;path/filepath&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;sync&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;github.com/nicksnyder/go-i18n/v2/i18n&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;golang.org/x/text/language&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;github.com/nicksnyder/go-i18n/v2/i18n&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;golang.org/x/text/language&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// LocalizationService 提供本土化功能</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>LocalizationService</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span>        <span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>Bundle</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizers</span>    <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>Localizer</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizersMux</span> <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>RWMutex</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>defaultLang</span>   <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// LocalizationService 提供本土化功能</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> LocalizationService <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>	bundle        <span style=color:#9ece6a;font-weight:700>*</span>i18n.Bundle
+</span></span><span style=display:flex><span>	localizers    <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9ece6a;font-weight:700>*</span>i18n.Localizer
+</span></span><span style=display:flex><span>	localizersMux sync.RWMutex
+</span></span><span style=display:flex><span>	defaultLang   <span style=color:#41a6b5>string</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewLocalizationService 创建一个新的本土化服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewLocalizationService</span>(<span style=color:#a6e22e>defaultLang</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>, <span style=color:#66d9ef>error</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 创建一个新的语言包</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>NewBundle</span>(<span style=color:#a6e22e>language</span>.<span style=color:#a6e22e>Make</span>(<span style=color:#a6e22e>defaultLang</span>))
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>RegisterUnmarshalFunc</span>(<span style=color:#e6db74>&#34;json&#34;</span>, <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Unmarshal</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewLocalizationService 创建一个新的本土化服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewLocalizationService</span>(defaultLang <span style=color:#41a6b5>string</span>) (<span style=color:#9ece6a;font-weight:700>*</span>LocalizationService, <span style=color:#41a6b5>error</span>) {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 创建一个新的语言包</span>
+</span></span><span style=display:flex><span>	bundle <span style=color:#9ece6a;font-weight:700>:=</span> i18n.<span style=color:#7aa2f7>NewBundle</span>(language.<span style=color:#7aa2f7>Make</span>(defaultLang))
+</span></span><span style=display:flex><span>	bundle.<span style=color:#7aa2f7>RegisterUnmarshalFunc</span>(<span style=color:#9ece6a>&#34;json&#34;</span>, json.Unmarshal)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>service</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>LocalizationService</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>bundle</span>:      <span style=color:#a6e22e>bundle</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>localizers</span>:  make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>Localizer</span>),
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>defaultLang</span>: <span style=color:#a6e22e>defaultLang</span>,
+</span></span><span style=display:flex><span>	service <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>LocalizationService{
+</span></span><span style=display:flex><span>		bundle:      bundle,
+</span></span><span style=display:flex><span>		localizers:  <span style=color:#9ece6a>make</span>(<span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9ece6a;font-weight:700>*</span>i18n.Localizer),
+</span></span><span style=display:flex><span>		defaultLang: defaultLang,
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 加载翻译文件</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>loadTranslationFiles</span>(<span style=color:#e6db74>&#34;./locales&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 加载翻译文件</span>
+</span></span><span style=display:flex><span>	err <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>loadTranslationFiles</span>(<span style=color:#9ece6a>&#34;./locales&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>, err
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>service</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> service, <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// loadTranslationFiles 加载指定目录下的所有翻译文件</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>loadTranslationFiles</span>(<span style=color:#a6e22e>dir</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>files</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>os</span>.<span style=color:#a6e22e>ReadDir</span>(<span style=color:#a6e22e>dir</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;读取本土化目录失败: %w&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// loadTranslationFiles 加载指定目录下的所有翻译文件</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>loadTranslationFiles</span>(dir <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	files, err <span style=color:#9ece6a;font-weight:700>:=</span> os.<span style=color:#7aa2f7>ReadDir</span>(dir)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;读取本土化目录失败: %w&#34;</span>, err)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>file</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>files</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>file</span>.<span style=color:#a6e22e>IsDir</span>() {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>for</span> _, file <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> files {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>if</span> file.<span style=color:#7aa2f7>IsDir</span>() {
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>continue</span>
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 只处理JSON文件</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>filepath</span>.<span style=color:#a6e22e>Ext</span>(<span style=color:#a6e22e>file</span>.<span style=color:#a6e22e>Name</span>()) <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;.json&#34;</span> {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 只处理JSON文件</span>
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>if</span> filepath.<span style=color:#7aa2f7>Ext</span>(file.<span style=color:#7aa2f7>Name</span>()) <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;.json&#34;</span> {
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>continue</span>
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 加载翻译文件</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>path</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>filepath</span>.<span style=color:#a6e22e>Join</span>(<span style=color:#a6e22e>dir</span>, <span style=color:#a6e22e>file</span>.<span style=color:#a6e22e>Name</span>())
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>LoadMessageFile</span>(<span style=color:#a6e22e>path</span>)
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;加载翻译文件 %s 失败: %w&#34;</span>, <span style=color:#a6e22e>path</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 加载翻译文件</span>
+</span></span><span style=display:flex><span>		path <span style=color:#9ece6a;font-weight:700>:=</span> filepath.<span style=color:#7aa2f7>Join</span>(dir, file.<span style=color:#7aa2f7>Name</span>())
+</span></span><span style=display:flex><span>		_, err <span style=color:#9ece6a;font-weight:700>:=</span> s.bundle.<span style=color:#7aa2f7>LoadMessageFile</span>(path)
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>return</span> fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;加载翻译文件 %s 失败: %w&#34;</span>, path, err)
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 从文件名提取语言标签 (如 &#34;en.json&#34; -&gt; &#34;en&#34;)</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>langTag</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>filepath</span>.<span style=color:#a6e22e>Base</span>(<span style=color:#a6e22e>file</span>.<span style=color:#a6e22e>Name</span>())
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>langTag</span> = <span style=color:#a6e22e>langTag</span>[:len(<span style=color:#a6e22e>langTag</span>)<span style=color:#f92672>-</span><span style=color:#ae81ff>5</span>] <span style=color:#75715e>// 移除 &#34;.json&#34; 后缀</span>
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 从文件名提取语言标签 (如 &#34;en.json&#34; -&gt; &#34;en&#34;)</span>
+</span></span><span style=display:flex><span>		langTag <span style=color:#9ece6a;font-weight:700>:=</span> filepath.<span style=color:#7aa2f7>Base</span>(file.<span style=color:#7aa2f7>Name</span>())
+</span></span><span style=display:flex><span>		langTag = langTag[:<span style=color:#9ece6a>len</span>(langTag)<span style=color:#9ece6a;font-weight:700>-</span><span style=color:#e0af68>5</span>] <span style=color:#414868;font-style:italic>// 移除 &#34;.json&#34; 后缀</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 创建并缓存 localizer</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>Lock</span>()
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizers</span>[<span style=color:#a6e22e>langTag</span>] = <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>NewLocalizer</span>(<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>bundle</span>, <span style=color:#a6e22e>langTag</span>)
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>Unlock</span>()
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 创建并缓存 localizer</span>
+</span></span><span style=display:flex><span>		s.localizersMux.<span style=color:#7aa2f7>Lock</span>()
+</span></span><span style=display:flex><span>		s.localizers[langTag] = i18n.<span style=color:#7aa2f7>NewLocalizer</span>(s.bundle, langTag)
+</span></span><span style=display:flex><span>		s.localizersMux.<span style=color:#7aa2f7>Unlock</span>()
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetLocalizer 获取指定语言的本土化器</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>GetLocalizer</span>(<span style=color:#a6e22e>lang</span> <span style=color:#66d9ef>string</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>Localizer</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>RLock</span>()
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizer</span>, <span style=color:#a6e22e>exists</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizers</span>[<span style=color:#a6e22e>lang</span>]
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>RUnlock</span>()
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetLocalizer 获取指定语言的本土化器</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>GetLocalizer</span>(lang <span style=color:#41a6b5>string</span>) <span style=color:#9ece6a;font-weight:700>*</span>i18n.Localizer {
+</span></span><span style=display:flex><span>	s.localizersMux.<span style=color:#7aa2f7>RLock</span>()
+</span></span><span style=display:flex><span>	localizer, exists <span style=color:#9ece6a;font-weight:700>:=</span> s.localizers[lang]
+</span></span><span style=display:flex><span>	s.localizersMux.<span style=color:#7aa2f7>RUnlock</span>()
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> !<span style=color:#a6e22e>exists</span> {
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 如果没有对应的本土化器，使用默认语言</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>RLock</span>()
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>localizer</span> = <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizers</span>[<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>defaultLang</span>]
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>RUnlock</span>()
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> !exists {
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 如果没有对应的本土化器，使用默认语言</span>
+</span></span><span style=display:flex><span>		s.localizersMux.<span style=color:#7aa2f7>RLock</span>()
+</span></span><span style=display:flex><span>		localizer = s.localizers[s.defaultLang]
+</span></span><span style=display:flex><span>		s.localizersMux.<span style=color:#7aa2f7>RUnlock</span>()
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>localizer</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> localizer
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// Translate 翻译指定的消息ID</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>lang</span>, <span style=color:#a6e22e>messageID</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>templateData</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizer</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>GetLocalizer</span>(<span style=color:#a6e22e>lang</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// Translate 翻译指定的消息ID</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>Translate</span>(lang, messageID <span style=color:#41a6b5>string</span>, templateData <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	localizer <span style=color:#9ece6a;font-weight:700>:=</span> s.<span style=color:#7aa2f7>GetLocalizer</span>(lang)
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 翻译消息</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>message</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>localizer</span>.<span style=color:#a6e22e>Localize</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>LocalizeConfig</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>MessageID</span>:    <span style=color:#a6e22e>messageID</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>TemplateData</span>: <span style=color:#a6e22e>templateData</span>,
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 翻译消息</span>
+</span></span><span style=display:flex><span>	message, err <span style=color:#9ece6a;font-weight:700>:=</span> localizer.<span style=color:#7aa2f7>Localize</span>(<span style=color:#9ece6a;font-weight:700>&amp;</span>i18n.LocalizeConfig{
+</span></span><span style=display:flex><span>		MessageID:    messageID,
+</span></span><span style=display:flex><span>		TemplateData: templateData,
 </span></span><span style=display:flex><span>	})
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 如果翻译失败，返回消息ID作为后备</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>messageID</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 如果翻译失败，返回消息ID作为后备</span>
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> messageID
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>message</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> message
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// FormatCurrency 格式化货币</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>FormatCurrency</span>(<span style=color:#a6e22e>lang</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>amount</span> <span style=color:#66d9ef>float64</span>, <span style=color:#a6e22e>currency</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 这里可以使用更复杂的货币格式化逻辑</span>
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 简化示例</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>templateData</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Amount&#34;</span>:   <span style=color:#a6e22e>amount</span>,
-</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Currency&#34;</span>: <span style=color:#a6e22e>currency</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// FormatCurrency 格式化货币</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>FormatCurrency</span>(lang <span style=color:#41a6b5>string</span>, amount <span style=color:#41a6b5>float64</span>, currency <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 这里可以使用更复杂的货币格式化逻辑</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 简化示例</span>
+</span></span><span style=display:flex><span>	templateData <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>		<span style=color:#9ece6a>&#34;Amount&#34;</span>:   amount,
+</span></span><span style=display:flex><span>		<span style=color:#9ece6a>&#34;Currency&#34;</span>: currency,
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>lang</span>, <span style=color:#e6db74>&#34;currency_format&#34;</span>, <span style=color:#a6e22e>templateData</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> s.<span style=color:#7aa2f7>Translate</span>(lang, <span style=color:#9ece6a>&#34;currency_format&#34;</span>, templateData)
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// FormatDateTime 格式化日期时间</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>FormatDateTime</span>(<span style=color:#a6e22e>lang</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>timestamp</span> <span style=color:#66d9ef>int64</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 简化示例</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>templateData</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Timestamp&#34;</span>: <span style=color:#a6e22e>timestamp</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// FormatDateTime 格式化日期时间</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>FormatDateTime</span>(lang <span style=color:#41a6b5>string</span>, timestamp <span style=color:#41a6b5>int64</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 简化示例</span>
+</span></span><span style=display:flex><span>	templateData <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>		<span style=color:#9ece6a>&#34;Timestamp&#34;</span>: timestamp,
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>lang</span>, <span style=color:#e6db74>&#34;datetime_format&#34;</span>, <span style=color:#a6e22e>templateData</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> s.<span style=color:#7aa2f7>Translate</span>(lang, <span style=color:#9ece6a>&#34;datetime_format&#34;</span>, templateData)
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=42-实现语言检测中间件>4.2 实现语言检测中间件</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/middleware/locale.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>middleware</span>
+</span></span></code></pre></div><h3 id=42-实现语言检测中间件>4.2 实现语言检测中间件</h3><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/middleware/locale.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> middleware
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;net/http&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;strings&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;net/http&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;strings&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 上下文键</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>contextKey</span> <span style=color:#66d9ef>string</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>LocaleContextKey</span> = <span style=color:#a6e22e>contextKey</span>(<span style=color:#e6db74>&#34;locale&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 上下文键</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> contextKey <span style=color:#41a6b5>string</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>const</span> LocaleContextKey = <span style=color:#7aa2f7>contextKey</span>(<span style=color:#9ece6a>&#34;locale&#34;</span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 支持的语言列表</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>var</span> <span style=color:#a6e22e>supportedLocales</span> = <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>bool</span>{
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;en&#34;</span>:    <span style=color:#66d9ef>true</span>,
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;zh-CN&#34;</span>: <span style=color:#66d9ef>true</span>,
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;ja&#34;</span>:    <span style=color:#66d9ef>true</span>,
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 添加更多支持的语言</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 支持的语言列表</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>var</span> supportedLocales = <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>bool</span>{
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;en&#34;</span>:    <span style=color:#e0af68>true</span>,
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;zh-CN&#34;</span>: <span style=color:#e0af68>true</span>,
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;ja&#34;</span>:    <span style=color:#e0af68>true</span>,
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 添加更多支持的语言</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// DefaultLocale 默认语言</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>const</span> <span style=color:#a6e22e>DefaultLocale</span> = <span style=color:#e6db74>&#34;en&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// DefaultLocale 默认语言</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>const</span> DefaultLocale = <span style=color:#9ece6a>&#34;en&#34;</span>
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// LocaleMiddleware 检测并设置请求的语言</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>LocaleMiddleware</span>(<span style=color:#a6e22e>next</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Handler</span>) <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Handler</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>HandlerFunc</span>(<span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>ResponseWriter</span>, <span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Request</span>) {
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 尝试从不同来源获取语言偏好</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>locale</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>detectLocale</span>(<span style=color:#a6e22e>r</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// LocaleMiddleware 检测并设置请求的语言</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>LocaleMiddleware</span>(next http.Handler) http.Handler {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> http.<span style=color:#7aa2f7>HandlerFunc</span>(<span style=color:#9d7cd8>func</span>(w http.ResponseWriter, r <span style=color:#9ece6a;font-weight:700>*</span>http.Request) {
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 尝试从不同来源获取语言偏好</span>
+</span></span><span style=display:flex><span>		locale <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#7aa2f7>detectLocale</span>(r)
 </span></span><span style=display:flex><span>		
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 在请求上下文中设置语言</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>ctx</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>WithValue</span>(<span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Context</span>(), <span style=color:#a6e22e>LocaleContextKey</span>, <span style=color:#a6e22e>locale</span>)
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>next</span>.<span style=color:#a6e22e>ServeHTTP</span>(<span style=color:#a6e22e>w</span>, <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>WithContext</span>(<span style=color:#a6e22e>ctx</span>))
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 在请求上下文中设置语言</span>
+</span></span><span style=display:flex><span>		ctx <span style=color:#9ece6a;font-weight:700>:=</span> context.<span style=color:#7aa2f7>WithValue</span>(r.<span style=color:#7aa2f7>Context</span>(), LocaleContextKey, locale)
+</span></span><span style=display:flex><span>		next.<span style=color:#7aa2f7>ServeHTTP</span>(w, r.<span style=color:#7aa2f7>WithContext</span>(ctx))
 </span></span><span style=display:flex><span>	})
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// detectLocale 从请求中检测语言</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>detectLocale</span>(<span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Request</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 1. 检查URL查询参数</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>queryLocale</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>URL</span>.<span style=color:#a6e22e>Query</span>().<span style=color:#a6e22e>Get</span>(<span style=color:#e6db74>&#34;lang&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>isSupported</span>(<span style=color:#a6e22e>queryLocale</span>) {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>queryLocale</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// detectLocale 从请求中检测语言</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>detectLocale</span>(r <span style=color:#9ece6a;font-weight:700>*</span>http.Request) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 1. 检查URL查询参数</span>
+</span></span><span style=display:flex><span>	queryLocale <span style=color:#9ece6a;font-weight:700>:=</span> r.URL.<span style=color:#7aa2f7>Query</span>().<span style=color:#7aa2f7>Get</span>(<span style=color:#9ece6a>&#34;lang&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> <span style=color:#7aa2f7>isSupported</span>(queryLocale) {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> queryLocale
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 2. 检查Cookie</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cookie</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Cookie</span>(<span style=color:#e6db74>&#34;locale&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>==</span> <span style=color:#66d9ef>nil</span> <span style=color:#f92672>&amp;&amp;</span> <span style=color:#a6e22e>isSupported</span>(<span style=color:#a6e22e>cookie</span>.<span style=color:#a6e22e>Value</span>) {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>cookie</span>.<span style=color:#a6e22e>Value</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 2. 检查Cookie</span>
+</span></span><span style=display:flex><span>	cookie, err <span style=color:#9ece6a;font-weight:700>:=</span> r.<span style=color:#7aa2f7>Cookie</span>(<span style=color:#9ece6a>&#34;locale&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>==</span> <span style=color:#e0af68>nil</span> <span style=color:#9ece6a;font-weight:700>&amp;&amp;</span> <span style=color:#7aa2f7>isSupported</span>(cookie.Value) {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> cookie.Value
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 3. 检查Accept-Language头</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>acceptLang</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Header</span>.<span style=color:#a6e22e>Get</span>(<span style=color:#e6db74>&#34;Accept-Language&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>acceptLang</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 分割并循环检查支持的语言</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>langs</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strings</span>.<span style=color:#a6e22e>Split</span>(<span style=color:#a6e22e>acceptLang</span>, <span style=color:#e6db74>&#34;,&#34;</span>)
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>lang</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>langs</span> {
-</span></span><span style=display:flex><span>			<span style=color:#75715e>// 提取语言代码（移除权重部分）</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>langCode</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strings</span>.<span style=color:#a6e22e>Split</span>(<span style=color:#a6e22e>strings</span>.<span style=color:#a6e22e>TrimSpace</span>(<span style=color:#a6e22e>lang</span>), <span style=color:#e6db74>&#34;;&#34;</span>)[<span style=color:#ae81ff>0</span>]
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>isSupported</span>(<span style=color:#a6e22e>langCode</span>) {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>langCode</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 3. 检查Accept-Language头</span>
+</span></span><span style=display:flex><span>	acceptLang <span style=color:#9ece6a;font-weight:700>:=</span> r.Header.<span style=color:#7aa2f7>Get</span>(<span style=color:#9ece6a>&#34;Accept-Language&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> acceptLang <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 分割并循环检查支持的语言</span>
+</span></span><span style=display:flex><span>		langs <span style=color:#9ece6a;font-weight:700>:=</span> strings.<span style=color:#7aa2f7>Split</span>(acceptLang, <span style=color:#9ece6a>&#34;,&#34;</span>)
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>for</span> _, lang <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> langs {
+</span></span><span style=display:flex><span>			<span style=color:#414868;font-style:italic>// 提取语言代码（移除权重部分）</span>
+</span></span><span style=display:flex><span>			langCode <span style=color:#9ece6a;font-weight:700>:=</span> strings.<span style=color:#7aa2f7>Split</span>(strings.<span style=color:#7aa2f7>TrimSpace</span>(lang), <span style=color:#9ece6a>&#34;;&#34;</span>)[<span style=color:#e0af68>0</span>]
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>if</span> <span style=color:#7aa2f7>isSupported</span>(langCode) {
+</span></span><span style=display:flex><span>				<span style=color:#bb9af7>return</span> langCode
 </span></span><span style=display:flex><span>			}
 </span></span><span style=display:flex><span>			
-</span></span><span style=display:flex><span>			<span style=color:#75715e>// 尝试主语言匹配 (如 &#34;zh-CN&#34; -&gt; &#34;zh&#34;)</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>mainLang</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>strings</span>.<span style=color:#a6e22e>Split</span>(<span style=color:#a6e22e>langCode</span>, <span style=color:#e6db74>&#34;-&#34;</span>)[<span style=color:#ae81ff>0</span>]
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>isSupported</span>(<span style=color:#a6e22e>mainLang</span>) {
-</span></span><span style=display:flex><span>				<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>mainLang</span>
+</span></span><span style=display:flex><span>			<span style=color:#414868;font-style:italic>// 尝试主语言匹配 (如 &#34;zh-CN&#34; -&gt; &#34;zh&#34;)</span>
+</span></span><span style=display:flex><span>			mainLang <span style=color:#9ece6a;font-weight:700>:=</span> strings.<span style=color:#7aa2f7>Split</span>(langCode, <span style=color:#9ece6a>&#34;-&#34;</span>)[<span style=color:#e0af68>0</span>]
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>if</span> <span style=color:#7aa2f7>isSupported</span>(mainLang) {
+</span></span><span style=display:flex><span>				<span style=color:#bb9af7>return</span> mainLang
 </span></span><span style=display:flex><span>			}
 </span></span><span style=display:flex><span>		}
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 4. 默认语言</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>DefaultLocale</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 4. 默认语言</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> DefaultLocale
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// isSupported 检查语言是否被支持</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>isSupported</span>(<span style=color:#a6e22e>locale</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>bool</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>locale</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// isSupported 检查语言是否被支持</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>isSupported</span>(locale <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>bool</span> {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> locale <span style=color:#9ece6a;font-weight:700>==</span> <span style=color:#9ece6a>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#e0af68>false</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>supported</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>supportedLocales</span>[<span style=color:#a6e22e>locale</span>]
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>supported</span>
+</span></span><span style=display:flex><span>	_, supported <span style=color:#9ece6a;font-weight:700>:=</span> supportedLocales[locale]
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> supported
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=43-配置翻译文件>4.3 配置翻译文件</h3><p>创建翻译文件，例如：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span><span style=color:#75715e>// locales/zh-CN.json
-</span></span></span><span style=display:flex><span><span style=color:#75715e></span>{
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;welcome_message&#34;</span>: <span style=color:#e6db74>&#34;欢迎来到我们的平台&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;greeting&#34;</span>: <span style=color:#e6db74>&#34;你好，{{.Name}}！&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;items_selected_one&#34;</span>: <span style=color:#e6db74>&#34;已选择 {{.Count}} 个项目&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;items_selected_other&#34;</span>: <span style=color:#e6db74>&#34;已选择 {{.Count}} 个项目&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;currency_format&#34;</span>: <span style=color:#e6db74>&#34;{{.Currency}} {{.Amount}}&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;datetime_format&#34;</span>: <span style=color:#e6db74>&#34;{{.Timestamp}}&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;country_specific_content&#34;</span>: <span style=color:#e6db74>&#34;这是针对中国市场的特殊内容&#34;</span>
+</span></span></code></pre></div><h3 id=43-配置翻译文件>4.3 配置翻译文件</h3><p>创建翻译文件，例如：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-json data-lang=json><span style=display:flex><span><span style=color:#414868;font-style:italic>// locales/zh-CN.json
+</span></span></span><span style=display:flex><span><span style=color:#414868;font-style:italic></span>{
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;welcome_message&#34;</span>: <span style=color:#9ece6a>&#34;欢迎来到我们的平台&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;greeting&#34;</span>: <span style=color:#9ece6a>&#34;你好，{{.Name}}！&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;items_selected_one&#34;</span>: <span style=color:#9ece6a>&#34;已选择 {{.Count}} 个项目&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;items_selected_other&#34;</span>: <span style=color:#9ece6a>&#34;已选择 {{.Count}} 个项目&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;currency_format&#34;</span>: <span style=color:#9ece6a>&#34;{{.Currency}} {{.Amount}}&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;datetime_format&#34;</span>: <span style=color:#9ece6a>&#34;{{.Timestamp}}&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;country_specific_content&#34;</span>: <span style=color:#9ece6a>&#34;这是针对中国市场的特殊内容&#34;</span>
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// locales/en.json
-</span></span></span><span style=display:flex><span><span style=color:#75715e></span>{
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;welcome_message&#34;</span>: <span style=color:#e6db74>&#34;Welcome to our platform&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;greeting&#34;</span>: <span style=color:#e6db74>&#34;Hello, {{.Name}}!&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;items_selected_one&#34;</span>: <span style=color:#e6db74>&#34;{{.Count}} item selected&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;items_selected_other&#34;</span>: <span style=color:#e6db74>&#34;{{.Count}} items selected&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;currency_format&#34;</span>: <span style=color:#e6db74>&#34;{{.Currency}} {{.Amount}}&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;datetime_format&#34;</span>: <span style=color:#e6db74>&#34;{{.Timestamp}}&#34;</span>,
-</span></span><span style=display:flex><span>  <span style=color:#f92672>&#34;country_specific_content&#34;</span>: <span style=color:#e6db74>&#34;This is specific content for the global market&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// locales/en.json
+</span></span></span><span style=display:flex><span><span style=color:#414868;font-style:italic></span>{
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;welcome_message&#34;</span>: <span style=color:#9ece6a>&#34;Welcome to our platform&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;greeting&#34;</span>: <span style=color:#9ece6a>&#34;Hello, {{.Name}}!&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;items_selected_one&#34;</span>: <span style=color:#9ece6a>&#34;{{.Count}} item selected&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;items_selected_other&#34;</span>: <span style=color:#9ece6a>&#34;{{.Count}} items selected&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;currency_format&#34;</span>: <span style=color:#9ece6a>&#34;{{.Currency}} {{.Amount}}&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;datetime_format&#34;</span>: <span style=color:#9ece6a>&#34;{{.Timestamp}}&#34;</span>,
+</span></span><span style=display:flex><span>  <span style=color:#bb9af7>&#34;country_specific_content&#34;</span>: <span style=color:#9ece6a>&#34;This is specific content for the global market&#34;</span>
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=44-处理特定国家的逻辑>4.4 处理特定国家的逻辑</h3><p>有时候我们需要处理的不仅仅是文本翻译，还包括不同国家的特定业务逻辑，例如：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// internal/service/business.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>service</span>
+</span></span></code></pre></div><h3 id=44-处理特定国家的逻辑>4.4 处理特定国家的逻辑</h3><p>有时候我们需要处理的不仅仅是文本翻译，还包括不同国家的特定业务逻辑，例如：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// internal/service/business.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> service
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;errors&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;errors&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// CountrySpecificService 处理特定国家的业务逻辑</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>CountrySpecificService</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizationService</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// CountrySpecificService 处理特定国家的业务逻辑</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>type</span> CountrySpecificService <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>	localizationService <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// NewCountrySpecificService 创建一个新的国家特定服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>NewCountrySpecificService</span>(<span style=color:#a6e22e>ls</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#f92672>*</span><span style=color:#a6e22e>CountrySpecificService</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>CountrySpecificService</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>localizationService</span>: <span style=color:#a6e22e>ls</span>,
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// NewCountrySpecificService 创建一个新的国家特定服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>NewCountrySpecificService</span>(ls <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#9ece6a;font-weight:700>*</span>CountrySpecificService {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>CountrySpecificService{
+</span></span><span style=display:flex><span>		localizationService: ls,
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetPricingStrategy 根据国家获取定价策略</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>CountrySpecificService</span>) <span style=color:#a6e22e>GetPricingStrategy</span>(<span style=color:#a6e22e>country</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>country</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;CN&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;CNY_PRICING&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;JP&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;JPY_PRICING&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;US&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;USD_PRICING&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>default</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;GLOBAL_PRICING&#34;</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetPricingStrategy 根据国家获取定价策略</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>CountrySpecificService) <span style=color:#7aa2f7>GetPricingStrategy</span>(country <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>switch</span> country {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;CN&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;CNY_PRICING&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;JP&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;JPY_PRICING&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;US&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;USD_PRICING&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>default</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;GLOBAL_PRICING&#34;</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// GetTaxRate 获取特定国家的税率</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>CountrySpecificService</span>) <span style=color:#a6e22e>GetTaxRate</span>(<span style=color:#a6e22e>country</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>float64</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>country</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;CN&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0.13</span> <span style=color:#75715e>// 13% VAT</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;JP&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0.10</span> <span style=color:#75715e>// 10% consumption tax</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;US&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0.0</span> <span style=color:#75715e>// 在美国由州决定</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>default</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0.20</span> <span style=color:#75715e>// 默认20%</span>
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// GetTaxRate 获取特定国家的税率</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>CountrySpecificService) <span style=color:#7aa2f7>GetTaxRate</span>(country <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>float64</span> {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>switch</span> country {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;CN&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#e0af68>0.13</span> <span style=color:#414868;font-style:italic>// 13% VAT</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;JP&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#e0af68>0.10</span> <span style=color:#414868;font-style:italic>// 10% consumption tax</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;US&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#e0af68>0.0</span> <span style=color:#414868;font-style:italic>// 在美国由州决定</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>default</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#e0af68>0.20</span> <span style=color:#414868;font-style:italic>// 默认20%</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// ValidateAddress 验证地址格式是否符合特定国家标准</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>CountrySpecificService</span>) <span style=color:#a6e22e>ValidateAddress</span>(<span style=color:#a6e22e>country</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>country</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;CN&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>validateChineseAddress</span>(<span style=color:#a6e22e>address</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;JP&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>validateJapaneseAddress</span>(<span style=color:#a6e22e>address</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;US&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>validateUSAddress</span>(<span style=color:#a6e22e>address</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>default</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>validateGenericAddress</span>(<span style=color:#a6e22e>address</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// ValidateAddress 验证地址格式是否符合特定国家标准</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>CountrySpecificService) <span style=color:#7aa2f7>ValidateAddress</span>(country <span style=color:#41a6b5>string</span>, address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>switch</span> country {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;CN&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#7aa2f7>validateChineseAddress</span>(address)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;JP&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#7aa2f7>validateJapaneseAddress</span>(address)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;US&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#7aa2f7>validateUSAddress</span>(address)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>default</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#7aa2f7>validateGenericAddress</span>(address)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#75715e>// 针对不同国家的地址验证逻辑</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>validateChineseAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 验证省、市、区是否填写</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>address</span>[<span style=color:#e6db74>&#34;province&#34;</span>] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> <span style=color:#f92672>||</span> <span style=color:#a6e22e>address</span>[<span style=color:#e6db74>&#34;city&#34;</span>] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> <span style=color:#f92672>||</span> <span style=color:#a6e22e>address</span>[<span style=color:#e6db74>&#34;district&#34;</span>] <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#e6db74>&#34;中国地址必须包含省、市、区信息&#34;</span>)
-</span></span><span style=display:flex><span>	}
-</span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 邮编验证</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> len(<span style=color:#a6e22e>address</span>[<span style=color:#e6db74>&#34;zipcode&#34;</span>]) <span style=color:#f92672>!=</span> <span style=color:#ae81ff>6</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>errors</span>.<span style=color:#a6e22e>New</span>(<span style=color:#e6db74>&#34;中国邮编必须为6位数字&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#414868;font-style:italic>// 针对不同国家的地址验证逻辑</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>validateChineseAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 验证省、市、区是否填写</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> address[<span style=color:#9ece6a>&#34;province&#34;</span>] <span style=color:#9ece6a;font-weight:700>==</span> <span style=color:#9ece6a>&#34;&#34;</span> <span style=color:#9ece6a;font-weight:700>||</span> address[<span style=color:#9ece6a>&#34;city&#34;</span>] <span style=color:#9ece6a;font-weight:700>==</span> <span style=color:#9ece6a>&#34;&#34;</span> <span style=color:#9ece6a;font-weight:700>||</span> address[<span style=color:#9ece6a>&#34;district&#34;</span>] <span style=color:#9ece6a;font-weight:700>==</span> <span style=color:#9ece6a>&#34;&#34;</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> errors.<span style=color:#7aa2f7>New</span>(<span style=color:#9ece6a>&#34;中国地址必须包含省、市、区信息&#34;</span>)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>validateJapaneseAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 日本特有的地址验证逻辑</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>validateUSAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 美国特有的地址验证逻辑</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>validateGenericAddress</span>(<span style=color:#a6e22e>address</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 通用地址验证逻辑</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
-</span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=45-主程序入口>4.5 主程序入口</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// cmd/server/main.go</span>
-</span></span><span style=display:flex><span><span style=color:#f92672>package</span> <span style=color:#a6e22e>main</span>
-</span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#f92672>import</span> (
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;log&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;net/http&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 邮编验证</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> <span style=color:#9ece6a>len</span>(address[<span style=color:#9ece6a>&#34;zipcode&#34;</span>]) <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>6</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> errors.<span style=color:#7aa2f7>New</span>(<span style=color:#9ece6a>&#34;中国邮编必须为6位数字&#34;</span>)
+</span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;yourproject/internal/middleware&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#e6db74>&#34;yourproject/internal/service&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>validateJapaneseAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 日本特有的地址验证逻辑</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>validateUSAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 美国特有的地址验证逻辑</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>validateGenericAddress</span>(address <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 通用地址验证逻辑</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=45-主程序入口>4.5 主程序入口</h3><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// cmd/server/main.go</span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>package</span> main
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#7dcfff>import</span> (
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;log&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;net/http&#34;</span>
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;yourproject/internal/middleware&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#9ece6a>&#34;yourproject/internal/service&#34;</span>
 </span></span><span style=display:flex><span>)
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>main</span>() {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 初始化本土化服务</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizationService</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>NewLocalizationService</span>(<span style=color:#e6db74>&#34;en&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;初始化本土化服务失败: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>main</span>() {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 初始化本土化服务</span>
+</span></span><span style=display:flex><span>	localizationService, err <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>NewLocalizationService</span>(<span style=color:#9ece6a>&#34;en&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		log.<span style=color:#7aa2f7>Fatalf</span>(<span style=color:#9ece6a>&#34;初始化本土化服务失败: %v&#34;</span>, err)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 初始化国家特定服务</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>countryService</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>NewCountrySpecificService</span>(<span style=color:#a6e22e>localizationService</span>)
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 初始化国家特定服务</span>
+</span></span><span style=display:flex><span>	countryService <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>NewCountrySpecificService</span>(localizationService)
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 设置路由</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>mux</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>NewServeMux</span>()
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 设置路由</span>
+</span></span><span style=display:flex><span>	mux <span style=color:#9ece6a;font-weight:700>:=</span> http.<span style=color:#7aa2f7>NewServeMux</span>()
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 使用本土化中间件</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>handler</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>middleware</span>.<span style=color:#a6e22e>LocaleMiddleware</span>(<span style=color:#a6e22e>mux</span>)
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 使用本土化中间件</span>
+</span></span><span style=display:flex><span>	handler <span style=color:#9ece6a;font-weight:700>:=</span> middleware.<span style=color:#7aa2f7>LocaleMiddleware</span>(mux)
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 添加API路由</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>mux</span>.<span style=color:#a6e22e>HandleFunc</span>(<span style=color:#e6db74>&#34;/api/greeting&#34;</span>, <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>ResponseWriter</span>, <span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Request</span>) {
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 从上下文获取语言</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>locale</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Context</span>().<span style=color:#a6e22e>Value</span>(<span style=color:#a6e22e>middleware</span>.<span style=color:#a6e22e>LocaleContextKey</span>).(<span style=color:#66d9ef>string</span>)
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 添加API路由</span>
+</span></span><span style=display:flex><span>	mux.<span style=color:#7aa2f7>HandleFunc</span>(<span style=color:#9ece6a>&#34;/api/greeting&#34;</span>, <span style=color:#9d7cd8>func</span>(w http.ResponseWriter, r <span style=color:#9ece6a;font-weight:700>*</span>http.Request) {
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 从上下文获取语言</span>
+</span></span><span style=display:flex><span>		locale <span style=color:#9ece6a;font-weight:700>:=</span> r.<span style=color:#7aa2f7>Context</span>().<span style=color:#7aa2f7>Value</span>(middleware.LocaleContextKey).(<span style=color:#41a6b5>string</span>)
 </span></span><span style=display:flex><span>		
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 翻译问候语</span>
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>greeting</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>localizationService</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>locale</span>, <span style=color:#e6db74>&#34;greeting&#34;</span>, <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>			<span style=color:#e6db74>&#34;Name&#34;</span>: <span style=color:#e6db74>&#34;User&#34;</span>,
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 翻译问候语</span>
+</span></span><span style=display:flex><span>		greeting <span style=color:#9ece6a;font-weight:700>:=</span> localizationService.<span style=color:#7aa2f7>Translate</span>(locale, <span style=color:#9ece6a>&#34;greeting&#34;</span>, <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>			<span style=color:#9ece6a>&#34;Name&#34;</span>: <span style=color:#9ece6a>&#34;User&#34;</span>,
 </span></span><span style=display:flex><span>		})
 </span></span><span style=display:flex><span>		
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>Header</span>().<span style=color:#a6e22e>Set</span>(<span style=color:#e6db74>&#34;Content-Type&#34;</span>, <span style=color:#e6db74>&#34;application/json&#34;</span>)
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>Write</span>([]byte(<span style=color:#e6db74>`{&#34;message&#34;: &#34;`</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>greeting</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>`&#34;}`</span>))
+</span></span><span style=display:flex><span>		w.<span style=color:#7aa2f7>Header</span>().<span style=color:#7aa2f7>Set</span>(<span style=color:#9ece6a>&#34;Content-Type&#34;</span>, <span style=color:#9ece6a>&#34;application/json&#34;</span>)
+</span></span><span style=display:flex><span>		w.<span style=color:#7aa2f7>Write</span>([]<span style=color:#9ece6a>byte</span>(<span style=color:#9ece6a>`{&#34;message&#34;: &#34;`</span> <span style=color:#9ece6a;font-weight:700>+</span> greeting <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#9ece6a>`&#34;}`</span>))
 </span></span><span style=display:flex><span>	})
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 启动服务器</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Println</span>(<span style=color:#e6db74>&#34;服务器启动在 :8080 端口&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>log</span>.<span style=color:#a6e22e>Fatal</span>(<span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>ListenAndServe</span>(<span style=color:#e6db74>&#34;:8080&#34;</span>, <span style=color:#a6e22e>handler</span>))
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 启动服务器</span>
+</span></span><span style=display:flex><span>	log.<span style=color:#7aa2f7>Println</span>(<span style=color:#9ece6a>&#34;服务器启动在 :8080 端口&#34;</span>)
+</span></span><span style=display:flex><span>	log.<span style=color:#7aa2f7>Fatal</span>(http.<span style=color:#7aa2f7>ListenAndServe</span>(<span style=color:#9ece6a>&#34;:8080&#34;</span>, handler))
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h2 id=5-高级本土化策略>5. 高级本土化策略</h2><h3 id=51-内容差异化>5.1 内容差异化</h3><p>不同地区可能需要展示完全不同的内容，而不仅仅是翻译：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>getLocalizedContent</span>(<span style=color:#a6e22e>country</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>country</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;CN&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;这是中国特有的促销活动内容，符合当地法规和市场需求&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;US&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;This is US-specific promotional content that follows local regulations&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>default</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;This is our global promotion available to all countries&#34;</span>
+</span></span></code></pre></div><h2 id=5-高级本土化策略>5. 高级本土化策略</h2><h3 id=51-内容差异化>5.1 内容差异化</h3><p>不同地区可能需要展示完全不同的内容，而不仅仅是翻译：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>getLocalizedContent</span>(country <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>switch</span> country {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;CN&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;这是中国特有的促销活动内容，符合当地法规和市场需求&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;US&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;This is US-specific promotional content that follows local regulations&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>default</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> <span style=color:#9ece6a>&#34;This is our global promotion available to all countries&#34;</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=52-图片和资源本土化>5.2 图片和资源本土化</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>getLocalizedImagePath</span>(<span style=color:#a6e22e>country</span>, <span style=color:#a6e22e>imageType</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>basePath</span> <span style=color:#f92672>:=</span> <span style=color:#e6db74>&#34;/assets/images/&#34;</span>
+</span></span></code></pre></div><h3 id=52-图片和资源本土化>5.2 图片和资源本土化</h3><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>getLocalizedImagePath</span>(country, imageType <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	basePath <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9ece6a>&#34;/assets/images/&#34;</span>
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>switch</span> <span style=color:#a6e22e>imageType</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;banner&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>basePath</span> <span style=color:#f92672>+</span> <span style=color:#a6e22e>country</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;/banner.jpg&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>case</span> <span style=color:#e6db74>&#34;logo&#34;</span>:
-</span></span><span style=display:flex><span>		<span style=color:#75715e>// 有些国家可能需要使用不同的logo</span>
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>country</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;CN&#34;</span> {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>basePath</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;cn_logo.png&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>switch</span> imageType {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;banner&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> basePath <span style=color:#9ece6a;font-weight:700>+</span> country <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#9ece6a>&#34;/banner.jpg&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>case</span> <span style=color:#9ece6a>&#34;logo&#34;</span>:
+</span></span><span style=display:flex><span>		<span style=color:#414868;font-style:italic>// 有些国家可能需要使用不同的logo</span>
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>if</span> country <span style=color:#9ece6a;font-weight:700>==</span> <span style=color:#9ece6a>&#34;CN&#34;</span> {
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>return</span> basePath <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#9ece6a>&#34;cn_logo.png&#34;</span>
 </span></span><span style=display:flex><span>		}
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>basePath</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;global_logo.png&#34;</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>default</span>:
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>basePath</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;default.jpg&#34;</span>
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> basePath <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#9ece6a>&#34;global_logo.png&#34;</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>default</span>:
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> basePath <span style=color:#9ece6a;font-weight:700>+</span> <span style=color:#9ece6a>&#34;default.jpg&#34;</span>
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=53-动态加载翻译>5.3 动态加载翻译</h3><p>在大型应用中，可能需要动态加载翻译文件：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// 动态重新加载指定语言的翻译</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>ReloadTranslation</span>(<span style=color:#a6e22e>lang</span> <span style=color:#66d9ef>string</span>) <span style=color:#66d9ef>error</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>path</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Sprintf</span>(<span style=color:#e6db74>&#34;./locales/%s.json&#34;</span>, <span style=color:#a6e22e>lang</span>)
+</span></span></code></pre></div><h3 id=53-动态加载翻译>5.3 动态加载翻译</h3><p>在大型应用中，可能需要动态加载翻译文件：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// 动态重新加载指定语言的翻译</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>ReloadTranslation</span>(lang <span style=color:#41a6b5>string</span>) <span style=color:#41a6b5>error</span> {
+</span></span><span style=display:flex><span>	path <span style=color:#9ece6a;font-weight:700>:=</span> fmt.<span style=color:#7aa2f7>Sprintf</span>(<span style=color:#9ece6a>&#34;./locales/%s.json&#34;</span>, lang)
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>bundle</span>.<span style=color:#a6e22e>LoadMessageFile</span>(<span style=color:#a6e22e>path</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>fmt</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;重新加载翻译文件 %s 失败: %w&#34;</span>, <span style=color:#a6e22e>path</span>, <span style=color:#a6e22e>err</span>)
+</span></span><span style=display:flex><span>	_, err <span style=color:#9ece6a;font-weight:700>:=</span> s.bundle.<span style=color:#7aa2f7>LoadMessageFile</span>(path)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> fmt.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;重新加载翻译文件 %s 失败: %w&#34;</span>, path, err)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 更新本土化器</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>Lock</span>()
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizers</span>[<span style=color:#a6e22e>lang</span>] = <span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>NewLocalizer</span>(<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>bundle</span>, <span style=color:#a6e22e>lang</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>localizersMux</span>.<span style=color:#a6e22e>Unlock</span>()
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 更新本土化器</span>
+</span></span><span style=display:flex><span>	s.localizersMux.<span style=color:#7aa2f7>Lock</span>()
+</span></span><span style=display:flex><span>	s.localizers[lang] = i18n.<span style=color:#7aa2f7>NewLocalizer</span>(s.bundle, lang)
+</span></span><span style=display:flex><span>	s.localizersMux.<span style=color:#7aa2f7>Unlock</span>()
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#e0af68>nil</span>
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h2 id=6-性能优化>6. 性能优化</h2><h3 id=61-翻译缓存>6.1 翻译缓存</h3><p>为了提高性能，我们可以实现翻译缓存：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>translationCache</span> <span style=color:#66d9ef>struct</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cache</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span> <span style=color:#75715e>// key: &#34;lang:messageID:params&#34;, value: translated string</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>mu</span>    <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>RWMutex</span>
+</span></span></code></pre></div><h2 id=6-性能优化>6. 性能优化</h2><h3 id=61-翻译缓存>6.1 翻译缓存</h3><p>为了提高性能，我们可以实现翻译缓存：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#9d7cd8>type</span> translationCache <span style=color:#9d7cd8>struct</span> {
+</span></span><span style=display:flex><span>	cache <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span> <span style=color:#414868;font-style:italic>// key: &#34;lang:messageID:params&#34;, value: translated string</span>
+</span></span><span style=display:flex><span>	mu    sync.RWMutex
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>newTranslationCache</span>() <span style=color:#f92672>*</span><span style=color:#a6e22e>translationCache</span> {
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>translationCache</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>cache</span>: make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>),
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>newTranslationCache</span>() <span style=color:#9ece6a;font-weight:700>*</span>translationCache {
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> <span style=color:#9ece6a;font-weight:700>&amp;</span>translationCache{
+</span></span><span style=display:flex><span>		cache: <span style=color:#9ece6a>make</span>(<span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>),
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>c</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>translationCache</span>) <span style=color:#a6e22e>Get</span>(<span style=color:#a6e22e>key</span> <span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>bool</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>mu</span>.<span style=color:#a6e22e>RLock</span>()
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>mu</span>.<span style=color:#a6e22e>RUnlock</span>()
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (c <span style=color:#9ece6a;font-weight:700>*</span>translationCache) <span style=color:#7aa2f7>Get</span>(key <span style=color:#41a6b5>string</span>) (<span style=color:#41a6b5>string</span>, <span style=color:#41a6b5>bool</span>) {
+</span></span><span style=display:flex><span>	c.mu.<span style=color:#7aa2f7>RLock</span>()
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>defer</span> c.mu.<span style=color:#7aa2f7>RUnlock</span>()
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>val</span>, <span style=color:#a6e22e>exists</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>cache</span>[<span style=color:#a6e22e>key</span>]
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>val</span>, <span style=color:#a6e22e>exists</span>
+</span></span><span style=display:flex><span>	val, exists <span style=color:#9ece6a;font-weight:700>:=</span> c.cache[key]
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> val, exists
 </span></span><span style=display:flex><span>}
 </span></span><span style=display:flex><span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>c</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>translationCache</span>) <span style=color:#a6e22e>Set</span>(<span style=color:#a6e22e>key</span>, <span style=color:#a6e22e>val</span> <span style=color:#66d9ef>string</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>mu</span>.<span style=color:#a6e22e>Lock</span>()
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>mu</span>.<span style=color:#a6e22e>Unlock</span>()
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> (c <span style=color:#9ece6a;font-weight:700>*</span>translationCache) <span style=color:#7aa2f7>Set</span>(key, val <span style=color:#41a6b5>string</span>) {
+</span></span><span style=display:flex><span>	c.mu.<span style=color:#7aa2f7>Lock</span>()
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>defer</span> c.mu.<span style=color:#7aa2f7>Unlock</span>()
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>cache</span>[<span style=color:#a6e22e>key</span>] = <span style=color:#a6e22e>val</span>
+</span></span><span style=display:flex><span>	c.cache[key] = val
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><p>然后在本土化服务中使用：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>) <span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>lang</span>, <span style=color:#a6e22e>messageID</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>templateData</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 生成缓存键</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>cacheKey</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>generateCacheKey</span>(<span style=color:#a6e22e>lang</span>, <span style=color:#a6e22e>messageID</span>, <span style=color:#a6e22e>templateData</span>)
+</span></span></code></pre></div><p>然后在本土化服务中使用：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#9d7cd8>func</span> (s <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService) <span style=color:#7aa2f7>Translate</span>(lang, messageID <span style=color:#41a6b5>string</span>, templateData <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) <span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 生成缓存键</span>
+</span></span><span style=display:flex><span>	cacheKey <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#7aa2f7>generateCacheKey</span>(lang, messageID, templateData)
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 检查缓存</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>val</span>, <span style=color:#a6e22e>exists</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>cache</span>.<span style=color:#a6e22e>Get</span>(<span style=color:#a6e22e>cacheKey</span>); <span style=color:#a6e22e>exists</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>val</span>
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 检查缓存</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> val, exists <span style=color:#9ece6a;font-weight:700>:=</span> s.cache.<span style=color:#7aa2f7>Get</span>(cacheKey); exists {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> val
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 翻译</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>localizer</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>GetLocalizer</span>(<span style=color:#a6e22e>lang</span>)
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>message</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>localizer</span>.<span style=color:#a6e22e>Localize</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>i18n</span>.<span style=color:#a6e22e>LocalizeConfig</span>{
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>MessageID</span>:    <span style=color:#a6e22e>messageID</span>,
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>TemplateData</span>: <span style=color:#a6e22e>templateData</span>,
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 翻译</span>
+</span></span><span style=display:flex><span>	localizer <span style=color:#9ece6a;font-weight:700>:=</span> s.<span style=color:#7aa2f7>GetLocalizer</span>(lang)
+</span></span><span style=display:flex><span>	message, err <span style=color:#9ece6a;font-weight:700>:=</span> localizer.<span style=color:#7aa2f7>Localize</span>(<span style=color:#9ece6a;font-weight:700>&amp;</span>i18n.LocalizeConfig{
+</span></span><span style=display:flex><span>		MessageID:    messageID,
+</span></span><span style=display:flex><span>		TemplateData: templateData,
 </span></span><span style=display:flex><span>	})
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>messageID</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>return</span> messageID
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 缓存结果</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>cache</span>.<span style=color:#a6e22e>Set</span>(<span style=color:#a6e22e>cacheKey</span>, <span style=color:#a6e22e>message</span>)
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 缓存结果</span>
+</span></span><span style=display:flex><span>	s.cache.<span style=color:#7aa2f7>Set</span>(cacheKey, message)
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>message</span>
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> message
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h3 id=62-并发处理>6.2 并发处理</h3><p>在高并发场景下，使用goroutine处理多语言内容生成：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>generateMultilingualContent</span>(<span style=color:#a6e22e>locService</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>LocalizationService</span>, <span style=color:#a6e22e>messageID</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>data</span> <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}) <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span> {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>result</span> <span style=color:#f92672>:=</span> make(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>var</span> <span style=color:#a6e22e>wg</span> <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>WaitGroup</span>
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>var</span> <span style=color:#a6e22e>mu</span> <span style=color:#a6e22e>sync</span>.<span style=color:#a6e22e>Mutex</span>
+</span></span></code></pre></div><h3 id=62-并发处理>6.2 并发处理</h3><p>在高并发场景下，使用goroutine处理多语言内容生成：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>generateMultilingualContent</span>(locService <span style=color:#9ece6a;font-weight:700>*</span>LocalizationService, messageID <span style=color:#41a6b5>string</span>, data <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}) <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span> {
+</span></span><span style=display:flex><span>	result <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#9ece6a>make</span>(<span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#41a6b5>string</span>)
+</span></span><span style=display:flex><span>	<span style=color:#9d7cd8>var</span> wg sync.WaitGroup
+</span></span><span style=display:flex><span>	<span style=color:#9d7cd8>var</span> mu sync.Mutex
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 支持的语言列表</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>languages</span> <span style=color:#f92672>:=</span> []<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;en&#34;</span>, <span style=color:#e6db74>&#34;zh-CN&#34;</span>, <span style=color:#e6db74>&#34;ja&#34;</span>, <span style=color:#e6db74>&#34;fr&#34;</span>, <span style=color:#e6db74>&#34;es&#34;</span>}
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 支持的语言列表</span>
+</span></span><span style=display:flex><span>	languages <span style=color:#9ece6a;font-weight:700>:=</span> []<span style=color:#41a6b5>string</span>{<span style=color:#9ece6a>&#34;en&#34;</span>, <span style=color:#9ece6a>&#34;zh-CN&#34;</span>, <span style=color:#9ece6a>&#34;ja&#34;</span>, <span style=color:#9ece6a>&#34;fr&#34;</span>, <span style=color:#9ece6a>&#34;es&#34;</span>}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> <span style=color:#a6e22e>_</span>, <span style=color:#a6e22e>lang</span> <span style=color:#f92672>:=</span> <span style=color:#66d9ef>range</span> <span style=color:#a6e22e>languages</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Add</span>(<span style=color:#ae81ff>1</span>)
-</span></span><span style=display:flex><span>		<span style=color:#66d9ef>go</span> <span style=color:#66d9ef>func</span>(<span style=color:#a6e22e>l</span> <span style=color:#66d9ef>string</span>) {
-</span></span><span style=display:flex><span>			<span style=color:#66d9ef>defer</span> <span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Done</span>()
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>for</span> _, lang <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#bb9af7>range</span> languages {
+</span></span><span style=display:flex><span>		wg.<span style=color:#7aa2f7>Add</span>(<span style=color:#e0af68>1</span>)
+</span></span><span style=display:flex><span>		<span style=color:#bb9af7>go</span> <span style=color:#9d7cd8>func</span>(l <span style=color:#41a6b5>string</span>) {
+</span></span><span style=display:flex><span>			<span style=color:#bb9af7>defer</span> wg.<span style=color:#7aa2f7>Done</span>()
 </span></span><span style=display:flex><span>			
-</span></span><span style=display:flex><span>			<span style=color:#75715e>// 翻译内容</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>translated</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>locService</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#a6e22e>l</span>, <span style=color:#a6e22e>messageID</span>, <span style=color:#a6e22e>data</span>)
+</span></span><span style=display:flex><span>			<span style=color:#414868;font-style:italic>// 翻译内容</span>
+</span></span><span style=display:flex><span>			translated <span style=color:#9ece6a;font-weight:700>:=</span> locService.<span style=color:#7aa2f7>Translate</span>(l, messageID, data)
 </span></span><span style=display:flex><span>			
-</span></span><span style=display:flex><span>			<span style=color:#75715e>// 安全地添加到结果map</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>mu</span>.<span style=color:#a6e22e>Lock</span>()
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>result</span>[<span style=color:#a6e22e>l</span>] = <span style=color:#a6e22e>translated</span>
-</span></span><span style=display:flex><span>			<span style=color:#a6e22e>mu</span>.<span style=color:#a6e22e>Unlock</span>()
-</span></span><span style=display:flex><span>		}(<span style=color:#a6e22e>lang</span>)
+</span></span><span style=display:flex><span>			<span style=color:#414868;font-style:italic>// 安全地添加到结果map</span>
+</span></span><span style=display:flex><span>			mu.<span style=color:#7aa2f7>Lock</span>()
+</span></span><span style=display:flex><span>			result[l] = translated
+</span></span><span style=display:flex><span>			mu.<span style=color:#7aa2f7>Unlock</span>()
+</span></span><span style=display:flex><span>		}(lang)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>wg</span>.<span style=color:#a6e22e>Wait</span>()
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#a6e22e>result</span>
+</span></span><span style=display:flex><span>	wg.<span style=color:#7aa2f7>Wait</span>()
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>return</span> result
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h2 id=7-测试多国本土化>7. 测试多国本土化</h2><p>编写测试确保本土化系统正常工作：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// 测试本土化服务</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>TestLocalizationService</span>(<span style=color:#a6e22e>t</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>testing</span>.<span style=color:#a6e22e>T</span>) {
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>service</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>NewLocalizationService</span>(<span style=color:#e6db74>&#34;en&#34;</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Fatalf</span>(<span style=color:#e6db74>&#34;初始化本土化服务失败: %v&#34;</span>, <span style=color:#a6e22e>err</span>)
+</span></span></code></pre></div><h2 id=7-测试多国本土化>7. 测试多国本土化</h2><p>编写测试确保本土化系统正常工作：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#414868;font-style:italic>// 测试本土化服务</span>
+</span></span><span style=display:flex><span><span style=color:#9d7cd8>func</span> <span style=color:#7aa2f7>TestLocalizationService</span>(t <span style=color:#9ece6a;font-weight:700>*</span>testing.T) {
+</span></span><span style=display:flex><span>	service, err <span style=color:#9ece6a;font-weight:700>:=</span> <span style=color:#7aa2f7>NewLocalizationService</span>(<span style=color:#9ece6a>&#34;en&#34;</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> err <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#e0af68>nil</span> {
+</span></span><span style=display:flex><span>		t.<span style=color:#7aa2f7>Fatalf</span>(<span style=color:#9ece6a>&#34;初始化本土化服务失败: %v&#34;</span>, err)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 测试基本翻译</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>enMessage</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#e6db74>&#34;en&#34;</span>, <span style=color:#e6db74>&#34;welcome_message&#34;</span>, <span style=color:#66d9ef>nil</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>enMessage</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;Welcome to our platform&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;英文翻译错误，期望 &#39;Welcome to our platform&#39;，得到 &#39;%s&#39;&#34;</span>, <span style=color:#a6e22e>enMessage</span>)
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 测试基本翻译</span>
+</span></span><span style=display:flex><span>	enMessage <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>Translate</span>(<span style=color:#9ece6a>&#34;en&#34;</span>, <span style=color:#9ece6a>&#34;welcome_message&#34;</span>, <span style=color:#e0af68>nil</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> enMessage <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;Welcome to our platform&#34;</span> {
+</span></span><span style=display:flex><span>		t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;英文翻译错误，期望 &#39;Welcome to our platform&#39;，得到 &#39;%s&#39;&#34;</span>, enMessage)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>zhMessage</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#e6db74>&#34;zh-CN&#34;</span>, <span style=color:#e6db74>&#34;welcome_message&#34;</span>, <span style=color:#66d9ef>nil</span>)
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>zhMessage</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;欢迎来到我们的平台&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;中文翻译错误，期望 &#39;欢迎来到我们的平台&#39;，得到 &#39;%s&#39;&#34;</span>, <span style=color:#a6e22e>zhMessage</span>)
+</span></span><span style=display:flex><span>	zhMessage <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>Translate</span>(<span style=color:#9ece6a>&#34;zh-CN&#34;</span>, <span style=color:#9ece6a>&#34;welcome_message&#34;</span>, <span style=color:#e0af68>nil</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> zhMessage <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;欢迎来到我们的平台&#34;</span> {
+</span></span><span style=display:flex><span>		t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;中文翻译错误，期望 &#39;欢迎来到我们的平台&#39;，得到 &#39;%s&#39;&#34;</span>, zhMessage)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 测试带模板参数的翻译</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>greeting</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#e6db74>&#34;en&#34;</span>, <span style=color:#e6db74>&#34;greeting&#34;</span>, <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Name&#34;</span>: <span style=color:#e6db74>&#34;John&#34;</span>,
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 测试带模板参数的翻译</span>
+</span></span><span style=display:flex><span>	greeting <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>Translate</span>(<span style=color:#9ece6a>&#34;en&#34;</span>, <span style=color:#9ece6a>&#34;greeting&#34;</span>, <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>		<span style=color:#9ece6a>&#34;Name&#34;</span>: <span style=color:#9ece6a>&#34;John&#34;</span>,
 </span></span><span style=display:flex><span>	})
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>greeting</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;Hello, John!&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;模板翻译错误，期望 &#39;Hello, John!&#39;，得到 &#39;%s&#39;&#34;</span>, <span style=color:#a6e22e>greeting</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> greeting <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;Hello, John!&#34;</span> {
+</span></span><span style=display:flex><span>		t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;模板翻译错误，期望 &#39;Hello, John!&#39;，得到 &#39;%s&#39;&#34;</span>, greeting)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#75715e>// 测试复数形式</span>
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>itemsOne</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#e6db74>&#34;en&#34;</span>, <span style=color:#e6db74>&#34;items_selected&#34;</span>, <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Count&#34;</span>: <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>	<span style=color:#414868;font-style:italic>// 测试复数形式</span>
+</span></span><span style=display:flex><span>	itemsOne <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>Translate</span>(<span style=color:#9ece6a>&#34;en&#34;</span>, <span style=color:#9ece6a>&#34;items_selected&#34;</span>, <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>		<span style=color:#9ece6a>&#34;Count&#34;</span>: <span style=color:#e0af68>1</span>,
 </span></span><span style=display:flex><span>	})
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>itemsOne</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;1 item selected&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;单数翻译错误，期望 &#39;1 item selected&#39;，得到 &#39;%s&#39;&#34;</span>, <span style=color:#a6e22e>itemsOne</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> itemsOne <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;1 item selected&#34;</span> {
+</span></span><span style=display:flex><span>		t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;单数翻译错误，期望 &#39;1 item selected&#39;，得到 &#39;%s&#39;&#34;</span>, itemsOne)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>	
-</span></span><span style=display:flex><span>	<span style=color:#a6e22e>itemsMultiple</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>service</span>.<span style=color:#a6e22e>Translate</span>(<span style=color:#e6db74>&#34;en&#34;</span>, <span style=color:#e6db74>&#34;items_selected&#34;</span>, <span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>interface</span>{}{
-</span></span><span style=display:flex><span>		<span style=color:#e6db74>&#34;Count&#34;</span>: <span style=color:#ae81ff>5</span>,
+</span></span><span style=display:flex><span>	itemsMultiple <span style=color:#9ece6a;font-weight:700>:=</span> service.<span style=color:#7aa2f7>Translate</span>(<span style=color:#9ece6a>&#34;en&#34;</span>, <span style=color:#9ece6a>&#34;items_selected&#34;</span>, <span style=color:#9d7cd8>map</span>[<span style=color:#41a6b5>string</span>]<span style=color:#9d7cd8>interface</span>{}{
+</span></span><span style=display:flex><span>		<span style=color:#9ece6a>&#34;Count&#34;</span>: <span style=color:#e0af68>5</span>,
 </span></span><span style=display:flex><span>	})
-</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> <span style=color:#a6e22e>itemsMultiple</span> <span style=color:#f92672>!=</span> <span style=color:#e6db74>&#34;5 items selected&#34;</span> {
-</span></span><span style=display:flex><span>		<span style=color:#a6e22e>t</span>.<span style=color:#a6e22e>Errorf</span>(<span style=color:#e6db74>&#34;复数翻译错误，期望 &#39;5 items selected&#39;，得到 &#39;%s&#39;&#34;</span>, <span style=color:#a6e22e>itemsMultiple</span>)
+</span></span><span style=display:flex><span>	<span style=color:#bb9af7>if</span> itemsMultiple <span style=color:#9ece6a;font-weight:700>!=</span> <span style=color:#9ece6a>&#34;5 items selected&#34;</span> {
+</span></span><span style=display:flex><span>		t.<span style=color:#7aa2f7>Errorf</span>(<span style=color:#9ece6a>&#34;复数翻译错误，期望 &#39;5 items selected&#39;，得到 &#39;%s&#39;&#34;</span>, itemsMultiple)
 </span></span><span style=display:flex><span>	}
 </span></span><span style=display:flex><span>}
-</span></span></code></pre></div><h2 id=8-部署考虑>8. 部署考虑</h2><h3 id=81-cdn配置>8.1 CDN配置</h3><p>对于多国本土化应用，应考虑使用CDN进行地理位置优化：</p><ol><li>将静态资源部署到靠近目标用户的CDN节点</li><li>为不同地区配置不同的静态资源包</li><li>使用边缘计算处理简单的本土化逻辑</li></ol><h3 id=82-docker部署>8.2 Docker部署</h3><p>使用Docker可以简化多环境部署：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dockerfile data-lang=dockerfile><span style=display:flex><span><span style=color:#66d9ef>FROM</span><span style=color:#e6db74> golang:1.21-alpine AS builder</span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>WORKDIR</span><span style=color:#e6db74> /app</span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>COPY</span> . .<span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> go mod download<span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> go build -o main ./cmd/server<span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>FROM</span><span style=color:#e6db74> alpine:latest</span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>WORKDIR</span><span style=color:#e6db74> /app</span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>COPY</span> --from<span style=color:#f92672>=</span>builder /app/main .<span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>COPY</span> ./locales ./locales<span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>EXPOSE</span><span style=color:#e6db74> 8080</span><span style=color:#960050;background-color:#1e0010>
-</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>CMD</span> [<span style=color:#e6db74>&#34;./main&#34;</span>]<span style=color:#960050;background-color:#1e0010>
-</span></span></span></code></pre></div><h2 id=9-最佳实践与总结>9. 最佳实践与总结</h2><h3 id=91-最佳实践>9.1 最佳实践</h3><ol><li><strong>设计先行</strong>：在开始编码前，先设计好本土化架构</li><li><strong>分离关注点</strong>：将翻译与业务逻辑分离</li><li><strong>自动化工具</strong>：使用工具辅助翻译管理和提取</li><li><strong>测试覆盖</strong>：为每种语言编写测试用例</li><li><strong>性能考虑</strong>：实现缓存和并发优化</li><li><strong>文化敏感度</strong>：注意不同文化的禁忌和习惯</li><li><strong>持续更新</strong>：定期更新翻译资源</li></ol><h3 id=92-总结>9.2 总结</h3><p>构建一个基于Go的多国本土化系统需要关注架构设计、工具选择、性能优化和文化适配等多个方面。通过本文所介绍的方法，你可以搭建一个灵活、高效、易于维护的本土化架构，帮助你的产品更好地服务全球市场。</p><p>Go语言的并发特性、强大的标准库和丰富的第三方支持，使其成为构建国际化应用的理想选择。希望本文能够帮助你在全球化业务拓展中少走弯路，为用户提供更好的本地化体验。</p></div></body></html>
+</span></span></code></pre></div><h2 id=8-部署考虑>8. 部署考虑</h2><h3 id=81-cdn配置>8.1 CDN配置</h3><p>对于多国本土化应用，应考虑使用CDN进行地理位置优化：</p><ol><li>将静态资源部署到靠近目标用户的CDN节点</li><li>为不同地区配置不同的静态资源包</li><li>使用边缘计算处理简单的本土化逻辑</li></ol><h3 id=82-docker部署>8.2 Docker部署</h3><p>使用Docker可以简化多环境部署：</p><div class=highlight><pre tabindex=0 style=color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dockerfile data-lang=dockerfile><span style=display:flex><span><span style=color:#bb9af7>FROM</span><span style=color:#9ece6a> golang:1.21-alpine AS builder</span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>WORKDIR</span><span style=color:#9ece6a> /app</span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>COPY</span> . .<span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>RUN</span> go mod download<span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>RUN</span> go build -o main ./cmd/server<span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>FROM</span><span style=color:#9ece6a> alpine:latest</span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>WORKDIR</span><span style=color:#9ece6a> /app</span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>COPY</span> --from<span style=color:#9ece6a;font-weight:700>=</span>builder /app/main .<span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>COPY</span> ./locales ./locales<span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>EXPOSE</span><span style=color:#9ece6a> 8080</span><span style=color:#db4b4b>
+</span></span></span><span style=display:flex><span><span style=color:#db4b4b></span><span style=color:#bb9af7>CMD</span> [<span style=color:#9ece6a>&#34;./main&#34;</span>]<span style=color:#db4b4b>
+</span></span></span></code></pre></div><h2 id=9-最佳实践与总结>9. 最佳实践与总结</h2><h3 id=91-最佳实践>9.1 最佳实践</h3><ol><li><strong>设计先行</strong>：在开始编码前，先设计好本土化架构</li><li><strong>分离关注点</strong>：将翻译与业务逻辑分离</li><li><strong>自动化工具</strong>：使用工具辅助翻译管理和提取</li><li><strong>测试覆盖</strong>：为每种语言编写测试用例</li><li><strong>性能考虑</strong>：实现缓存和并发优化</li><li><strong>文化敏感度</strong>：注意不同文化的禁忌和习惯</li><li><strong>持续更新</strong>：定期更新翻译资源</li></ol><h3 id=92-总结>9.2 总结</h3><p>构建一个基于Go的多国本土化系统需要关注架构设计、工具选择、性能优化和文化适配等多个方面。通过本文所介绍的方法，你可以搭建一个灵活、高效、易于维护的本土化架构，帮助你的产品更好地服务全球市场。</p><p>Go语言的并发特性、强大的标准库和丰富的第三方支持，使其成为构建国际化应用的理想选择。希望本文能够帮助你在全球化业务拓展中少走弯路，为用户提供更好的本地化体验。</p></div><div class=post-foot><svg viewBox="0 0 140 140" width="90" height="90" style="display:block"><ellipse cx="70" cy="128" rx="38" ry="4" fill="rgba(0,0,0,0.15)"/><g><rect x="52" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><rect x="78" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><ellipse cx="57" cy="122" rx="8" ry="3.5" fill="#151415"/><ellipse cx="83" cy="122" rx="8" ry="3.5" fill="#151415"/><path d="M32 78q0-30 38-30t38 30v28q0 10-12 10H44q-12 0-12-10z" fill="#e5d7ff" stroke="#151415" stroke-width="2.6" stroke-linejoin="round"/><path d="M55 90q15 14 30 0v22q-15 4-30 0z" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><path d="M36 84q10 12 20 8" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><path d="M104 84Q94 96 84 92" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><rect x="50" y="88" width="40" height="16" rx="2" fill="#151415" stroke="#151415" stroke-width="2"/><rect x="52" y="90" width="36" height="10" fill="#b5f26a"/><text x="54" y="98" font-family="JetBrains Mono, monospace" font-size="6" fill="#151415" font-weight="700">go run.</text><ellipse cx="58" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><ellipse cx="82" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><circle cx="59" cy="76" r="3.2" fill="#151415"/><circle cx="83" cy="76" r="3.2" fill="#151415"/><circle cx="60.5" cy="74.5" r="1.1" fill="#fdfcf5"/><circle cx="84.5" cy="74.5" r="1.1" fill="#fdfcf5"/><ellipse cx="48" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><ellipse cx="92" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><path d="M64 86q6 6 12 0" fill="none" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 32)"><path d="M0-18 4-6H16L6 2l4 12L0 6-10 14-6 2-16-6H-4z" fill="#f5dc5a" stroke="#151415" stroke-width="2.2" stroke-linejoin="round"/><circle cx="-.5" cy="-1" r="1.5" fill="#151415"/></g><path d="M70 48V42" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 102)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#151415" text-anchor="middle"><text y="0">♍</text></g></g><g opacity=".8"><path d="M20 36l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ef7065" stroke="#151415" stroke-width="1.2"/><path d="M118 24l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#f5dc5a" stroke="#151415" stroke-width="1.2"/></g></svg><div style=flex:1><div class=t>觉得这篇有用？</div><div class=s>订阅 RSS 或去 GitHub 给 <code>go-mcp</code> 点个 ⭐</div><div class=ctas><a class="cta ink" href=https://github.com/virgoC0der target=_blank rel=noopener>GitHub ⭐ ↗</a>
+<a class="cta paper" href=/index.xml>RSS 订阅 ↗</a></div></div></div><div class=prev-next><a class=card href=/posts/go-multilingual-localization/><div class=kicker>← prev</div><div class=title>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</div></a><a class="card next" href=/posts/rag-graphrag-context/><div class=kicker>next →</div><div class=title>RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考</div></a></div></article><aside class=side-meta><div class=front-matter><div class=head>◊ front matter</div><div class=yaml><div><span class=k>title:</span> go-i18n-localization</div><div><span class=k>date:</span> 2025-05-08</div><div><span class=k>author:</span> Billy</div><div><span class=k>words:</span> ~4.1k</div><div><span class=k>tags:</span></div><div style=padding-left:12px><div>- Golang</div><div>- 国际化</div><div>- 本土化</div><div>- i18n</div><div>- l10n</div></div><div><span class=k>categories:</span></div><div style=padding-left:12px><div>- 技术</div><div>- 编程</div></div></div></div><div class=reading-progress><div class=label>✦ reading</div><div class=text>当前进度 — 翻到 0%，还需 ~10 分钟</div><div class=bar><div></div></div></div></aside></div></div></main><footer class=site-foot><div class=wrap><div><div class=brand-row><svg viewBox="0 0 140 140" width="56" height="56" style="display:block"><ellipse cx="70" cy="128" rx="38" ry="4" fill="rgba(0,0,0,0.15)"/><g><rect x="52" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><rect x="78" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><ellipse cx="57" cy="122" rx="8" ry="3.5" fill="#151415"/><ellipse cx="83" cy="122" rx="8" ry="3.5" fill="#151415"/><path d="M32 78q0-30 38-30t38 30v28q0 10-12 10H44q-12 0-12-10z" fill="#e5d7ff" stroke="#151415" stroke-width="2.6" stroke-linejoin="round"/><path d="M55 90q15 14 30 0v22q-15 4-30 0z" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><path d="M34 80q-12-8-8-22 2-4 6-2" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="26" cy="56" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><path d="M106 86q12 0 14 10" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="120" cy="96" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><ellipse cx="58" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><ellipse cx="82" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><circle cx="59" cy="76" r="3.2" fill="#151415"/><circle cx="83" cy="76" r="3.2" fill="#151415"/><circle cx="60.5" cy="74.5" r="1.1" fill="#fdfcf5"/><circle cx="84.5" cy="74.5" r="1.1" fill="#fdfcf5"/><ellipse cx="48" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><ellipse cx="92" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><path d="M64 86q6 6 12 0" fill="none" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 32)"><path d="M0-18 4-6H16L6 2l4 12L0 6-10 14-6 2-16-6H-4z" fill="#f5dc5a" stroke="#151415" stroke-width="2.2" stroke-linejoin="round"/><circle cx="-.5" cy="-1" r="1.5" fill="#151415"/></g><path d="M70 48V42" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 102)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#151415" text-anchor="middle"><text y="0">♍</text></g></g><g opacity=".8"><path d="M20 36l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ef7065" stroke="#151415" stroke-width="1.2"/><path d="M118 24l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#f5dc5a" stroke="#151415" stroke-width="1.2"/></g></svg><div><div class=title>Billy's Blog</div><div class=info>built with Hugo · hosted on GitHub Pages</div></div></div><div class=quote-mono><span class=c>// </span>"First, solve the problem. Then, write the code."<br><span style=opacity:.5>— John Johnson</span></div></div><div><div class=col-head>Pages</div><a href=/>/~</a>
+<a href=/posts/>/posts</a>
+<a href=/tags/>/tags</a>
+<a href=/about/>/about</a>
+<a href=/now/>/now</a></div><div><div class=col-head>Elsewhere</div><a href=https://github.com/virgoC0der target=_blank rel=noopener>GitHub ↗</a>
+<a href=mailto:billychen826@gmail.com>Email ↗</a>
+<a href=/index.xml>RSS ↗</a></div><div><div class=col-head>Colophon</div><div class=row>Inter + Fraunces + JetBrains Mono</div><div class=row>© 2026 Billy (@virgoC0der)</div></div></div><div class=tag-strip><span>✦ made with ♥ and too much coffee · Billy · ♍ virgo edition</span>
+<span>v0.3.1 · hugo</span></div></footer><script>(function(){var t=document.querySelector(".reading-progress .bar > div"),n=document.querySelector(".reading-progress .text");if(!t)return;function e(){var a,e=document.documentElement,o=document.body,r=e.scrollTop||o.scrollTop,i=(e.scrollHeight||o.scrollHeight)-e.clientHeight,s=i>0?Math.min(100,Math.max(0,r/i*100)):0;t.style.width=s.toFixed(0)+"%",n&&(a=Math.max(0,Math.round((100-s)/10)),n.textContent="当前进度 — 翻到 "+s.toFixed(0)+"%，还需 ~"+a+" 分钟")}window.addEventListener("scroll",e,{passive:!0}),window.addEventListener("resize",e),e()})()</script></body></html>

@@ -18,20 +18,19 @@
 &lt;/ul>
 &lt;h2 id="项目结构">项目结构&lt;/h2>
 &lt;p>我们将创建一个具有以下结构的项目：&lt;/p>
-&lt;pre tabindex="0">&lt;code>docker-golang-dev/
-├── .air.toml # Air 热重载配置文件
-├── Dockerfile # 多阶段构建的 Dockerfile
-├── docker-compose.yml # Docker Compose 配置文件
-├── go.mod # Go 模块定义
-├── go.sum # Go 模块校验和
-└── src/ # Go 源代码目录
- └── main.go # 示例应用程序
-&lt;/code>&lt;/pre>&lt;h2 id="步骤一创建基础项目结构">步骤一：创建基础项目结构&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-fallback" data-lang="fallback">&lt;span style="display:flex;">&lt;span>docker-golang-dev/
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── .air.toml # Air 热重载配置文件
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── Dockerfile # 多阶段构建的 Dockerfile
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── docker-compose.yml # Docker Compose 配置文件
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── go.mod # Go 模块定义
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── go.sum # Go 模块校验和
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└── src/ # Go 源代码目录
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> └── main.go # 示例应用程序
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="步骤一创建基础项目结构">步骤一：创建基础项目结构&lt;/h2>
 &lt;p>首先，让我们创建项目目录并初始化Go模块：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir -p docker-golang-dev/src
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd docker-golang-dev
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir -p docker-golang-dev/src
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9ece6a">cd&lt;/span> docker-golang-dev
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/docker-golang-dev
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>touch go.sum
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="步骤二编写dockerfile">步骤二：编写Dockerfile&lt;/h2>
-&lt;p>Dockerfile是构建Docker镜像的核心配置文件。我们将使用多阶段构建来优化镜像大小和构建过程。&lt;/p>
-&lt;p>创建&lt;code>Dockerfile&lt;/code>文件，内容如下：&lt;/p></description></item></channel></rss>
+&lt;p>Dockerfile是构建Docker镜像的核心配置文件。我们将使用多阶段构建来优化镜像大小和构建过程。&lt;/p></description></item></channel></rss>

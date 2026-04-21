@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AI on Billy's Blog</title><link>https://virgoC0der.github.io/categories/ai/</link><description>Recent content in AI on Billy's Blog</description><generator>Hugo</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Wed, 05 Nov 2025 10:00:00 +0800</lastBuildDate><atom:link href="https://virgoC0der.github.io/categories/ai/index.xml" rel="self" type="application/rss+xml"/><item><title>RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考</title><link>https://virgoC0der.github.io/posts/rag-graphrag-context/</link><pubDate>Wed, 05 Nov 2025 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/rag-graphrag-context/</guid><description>&lt;h2 id="rag-基础原理">RAG 基础原理&lt;/h2>
+&lt;h3 id="什么是-rag">什么是 RAG&lt;/h3>
+&lt;p>RAG (Retrieval-Augmented Generation) 检索增强生成，是一种结合了信息检索和大语言模型生成能力的技术范式。其核心思想是：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>用户查询 → 检索相关文档 → 将文档作为上下文 → LLM 生成答案
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="为什么需要-rag">为什么需要 RAG&lt;/h3>
+&lt;p>在 RAG 出现之前，LLM 面临几个核心问题：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>知识截止日期&lt;/strong>：模型训练数据有时效性，无法获取最新信息&lt;/li>
+&lt;li>&lt;strong>幻觉问题&lt;/strong>：模型可能生成看似合理但实际错误的内容&lt;/li>
+&lt;li>&lt;strong>领域知识局限&lt;/strong>：对特定领域的深度知识覆盖不足&lt;/li>
+&lt;li>&lt;strong>无法访问私有数据&lt;/strong>：企业内部文档、数据库无法被预训练模型学习&lt;/li>
+&lt;li>&lt;strong>Context Window 大小受限&lt;/strong>：Context Window 不足以塞下全部文档内容，用户提问时 window 就塞满了&lt;/li>
+&lt;/ol>
+&lt;h3 id="rag-的基本架构">RAG 的基本架构&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 文档语料库 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │ 离线处理
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 文档切块 │ (Chunking)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 向量化 │ (Embedding)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 向量数据库 │ (Vector DB)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │ 在线查询
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌──────┴──────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 用户查询 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 查询向量化 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 相似度检索 │ (Top-K)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 重排序 │ (可选)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 构建 Prompt │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ LLM 生成 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└──────┬──────┘
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ▼
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>┌─────────────┐
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ 返回答案 │
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└─────────────┘
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="关键技术组件">关键技术组件&lt;/h3>
+&lt;h4 id="1-文档切块-chunking">1. 文档切块 (Chunking)&lt;/h4>
+&lt;p>切块策略直接影响检索质量。&lt;/p></description></item></channel></rss>

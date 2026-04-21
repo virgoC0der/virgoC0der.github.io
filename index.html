@@ -1,88 +1,57 @@
-<!doctype html><html lang=zh-CN><head><meta name=generator content="Hugo 0.145.0"><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Billy's Blog</title>
-<link rel=stylesheet href=/css/main.css><script defer src=https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js></script></head><body class="overflow-hidden h-screen w-screen" x-data="{ 
-    activeWindow: null,
-    windows: [],
-    showStartMenu: false,
-    isDragging: false,
-    dragOffset: { x: 0, y: 0 },
-    dragWindowId: null,
-    isResizing: false,
-    resizeWindowId: null,
-    resizeStart: { x: 0, y: 0, width: 0, height: 0 },
-    
-    openWindow(id, title, url) {
-        if (this.windows.find(w => w.id === id)) {
-            this.activeWindow = id;
-            return;
-        }
-        const width = 1000;
-        const height = 700;
-        const x = Math.max(0, (window.innerWidth - width) / 2) + (this.windows.length * 20);
-        const y = Math.max(0, (window.innerHeight - height) / 2) + (this.windows.length * 20);
-        this.windows.push({ id, title, url, x, y, width, height });
-        this.activeWindow = id;
-        this.showStartMenu = false;
-    },
-    closeWindow(id) {
-        this.windows = this.windows.filter(w => w.id !== id);
-        if (this.activeWindow === id) {
-            this.activeWindow = this.windows.length > 0 ? this.windows[this.windows.length - 1].id : null;
-        }
-    },
-    startDrag(id, event) {
-        this.isDragging = true;
-        this.dragWindowId = id;
-        this.activeWindow = id;
-        const win = this.windows.find(w => w.id === id);
-        this.dragOffset = {
-            x: event.clientX - win.x,
-            y: event.clientY - win.y
-        };
-    },
-    onDrag(event) {
-        if (!this.isDragging || !this.dragWindowId) return;
-        const win = this.windows.find(w => w.id === this.dragWindowId);
-        if (win) {
-            win.x = event.clientX - this.dragOffset.x;
-            win.y = event.clientY - this.dragOffset.y;
-        }
-    },
-    stopDrag() {
-        this.isDragging = false;
-        this.dragWindowId = null;
-    },
-    startResize(id, event) {
-        this.isResizing = true;
-        this.resizeWindowId = id;
-        this.activeWindow = id;
-        const win = this.windows.find(w => w.id === id);
-        this.resizeStart = {
-            x: event.clientX,
-            y: event.clientY,
-            width: win.width,
-            height: win.height
-        };
-    },
-    onResize(event) {
-        if (!this.isResizing || !this.resizeWindowId) return;
-        const win = this.windows.find(w => w.id === this.resizeWindowId);
-        if (win) {
-            const dx = event.clientX - this.resizeStart.x;
-            const dy = event.clientY - this.resizeStart.y;
-            win.width = Math.max(300, this.resizeStart.width + dx);
-            win.height = Math.max(200, this.resizeStart.height + dy);
-        }
-    },
-    stopResize() {
-        this.isResizing = false;
-        this.resizeWindowId = null;
-    }
-}" @click.away="showStartMenu = false" @mousemove.window="onDrag($event); onResize($event)" @mouseup.window="stopDrag(); stopResize()"><div class="p-8 flex flex-col gap-8 flex-wrap content-start items-start h-[calc(100vh-3rem)]"><div class=os-icon @click="openWindow('blog', 'Blog Posts', '/posts/')"><div class=os-icon-img>📝</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">Blog</span></div><div class=os-icon @click="openWindow('about', 'About Me', '/about/')"><div class=os-icon-img>👤</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">About</span></div><a href=https://github.com/virgoC0der target=_blank class=os-icon><div class=os-icon-img>🐙</div><span class="text-sm font-bold text-center bg-white/50 px-1 rounded">GitHub</span></a></div><template x-for="win in windows" :key=win.id><div class=os-window :style="`top: ${win.y}px; left: ${win.x}px; width: ${win.width}px; height: ${win.height}px; z-index: ${activeWindow === win.id ? 50 : 10}`" @mousedown="activeWindow = win.id"><div class="os-window-header cursor-move" @mousedown="startDrag(win.id, $event)"><span class=os-window-title x-text=win.title></span>
-<button @click.stop=closeWindow(win.id) class="w-6 h-6 flex items-center justify-center border-2 border-black hover:bg-red-500 hover:text-white transition-colors font-bold cursor-pointer">✕</button></div><div class="os-window-content bg-white p-0"><iframe :src=win.url class="w-full h-full border-none block" style="height:calc(100% - 2px)" :class="{ 'pointer-events-none': isDragging || isResizing }"></iframe></div><div class="absolute bottom-0 right-0 w-8 h-8 cursor-se-resize z-50 flex items-end justify-end p-1" @mousedown.stop.prevent="startResize(win.id, $event)"><div class="w-4 h-4 border-r-4 border-b-4 border-black"></div></div></div></template><div x-show=showStartMenu x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-2" class="fixed bottom-14 left-2 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50 w-64" style=display:none><div class="border-b-2 border-black bg-black text-white px-4 py-2 font-bold">菜单</div><div class=p-2><button @click="openWindow('blog', 'Blog Posts', '/posts/'); showStartMenu = false;" class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
-📝 博客文章
-</button>
-<button @click="openWindow('about', 'About Me', '/about/'); showStartMenu = false;" class="w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black mb-1">
-👤 关于我
-</button>
-<a href=https://github.com/virgoC0der target=_blank class="block w-full text-left px-4 py-2 hover:bg-black hover:text-white transition-colors font-bold border-2 border-transparent hover:border-black">🔗 GitHub</a></div></div><div class=os-taskbar><div class="flex items-center gap-2"><button @click="showStartMenu = !showStartMenu" class=os-start-btn>START</button>
-<template x-for="win in windows" :key=win.id><button @click="activeWindow = win.id" class="px-3 py-1 border-2 border-black text-sm font-bold transition-colors" :class="activeWindow === win.id ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'" x-text=win.title></button></template></div><div class="font-mono font-bold text-sm px-2" x-text="new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})"></div></div></body></html>
+<!doctype html><html lang=zh-CN><head><meta name=generator content="Hugo 0.145.0"><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Billy's Blog — PostHog Edition</title>
+<meta name=description content="后端开发者 · Go / AI / MCP · 实验室笔记"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.css><link rel=alternate type=application/rss+xml href=https://virgoC0der.github.io/index.xml title="Billy's Blog"></head><body><header class=topbar><div class=topbar-url><div class=topbar-dots><span></span><span></span><span></span></div><div class=topbar-addr><span class=mute>https://</span>
+<span class=brand>billy.dev</span>
+<span class=mute></span>
+<span class=cmdk>⌘K</span></div></div><nav class=tabs-row aria-label=Main><a class=tabs-logo href=/><svg viewBox="0 0 40 40" width="32" height="32" style="display:block"><rect x="2" y="2" width="36" height="36" rx="8" fill="#151415"/><path d="M20 8l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z" fill="#f5dc5a" stroke="#f5dc5a" stroke-width="1" stroke-linejoin="round"/><circle cx="16" cy="30" r="2" fill="#fdfcf5"/><circle cx="24" cy="30" r="2" fill="#fdfcf5"/><circle cx="16.5" cy="30.5" r=".9" fill="#151415"/><circle cx="24.5" cy="30.5" r=".9" fill="#151415"/></svg><div><div class="display title">Billy's Blog</div><div class="mono handle">@virgoC0der</div></div></a><a class="tab active" href=/ style=--tab-color:var(--yellow)><span class=slash>/</span>~
+</a><a class=tab href=/posts/ style=--tab-color:var(--coral-soft)><span class=slash>/</span>posts
+</a><a class=tab href=/tags/ style=--tab-color:var(--mint)><span class=slash>/</span>tags
+</a><a class=tab href=/about/ style=--tab-color:var(--lavender)><span class=slash>/</span>about
+</a><a class=tab href=/now/ style=--tab-color:var(--peach)><span class=slash>/</span>now</a><div class=tabs-fill></div><a class=tab-rss href=/index.xml>RSS ↗</a></nav></header><main><div class=page-wrap><section class=hero><div><div class=hero-kicker><span class=dot></span>
+~/blog $ whoami<span class=cursor-blink></span></div><h1 class=display>Hi, I'm <span class=highlight>Billy</span><br><span class=sub>a backend </span><span class=curly>{ gopher }</span></h1><p class=hero-lede>写 <span class="pill pill-go">Go</span>、调 <span class="pill pill-claude">Claude</span>、
+造 <span class="pill pill-mcp">MCP</span> — 一个相信 <em>good code is self-documenting but I comment anyway</em> 的后端开发者。
+这里是我的 <u class=wavy>实验室笔记</u>。</p><div class=hero-ctas><a class="cta lg" href=/posts/>读读最近的文章 →</a>
+<a class="cta lg paper" href=/about/>关于我</a><svg width="60" height="10" viewBox="0 0 120 10" class="squiggle"><path d="M2 6q8-5 18 0T40 6 60 6 80 6t20 0 18 0" fill="none" stroke="#ef7065" stroke-width="2.4" stroke-linecap="round"/></svg></div><div class=hero-stats><span><strong>8</strong> posts</span>
+<span class=sep>·</span>
+<span><strong>22</strong> tags</span><span class=sep>·</span>
+<span><strong>2025</strong> since</span>
+<span class=sep>·</span>
+<span>📍 中国</span></div></div><div class=hero-right><div class=hero-mascot><svg viewBox="0 0 140 140" width="180" height="180" style="display:block"><ellipse cx="70" cy="128" rx="38" ry="4" fill="rgba(0,0,0,0.15)"/><g class="wiggle"><rect x="52" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><rect x="78" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><ellipse cx="57" cy="122" rx="8" ry="3.5" fill="#151415"/><ellipse cx="83" cy="122" rx="8" ry="3.5" fill="#151415"/><path d="M32 78q0-30 38-30t38 30v28q0 10-12 10H44q-12 0-12-10z" fill="#e5d7ff" stroke="#151415" stroke-width="2.6" stroke-linejoin="round"/><path d="M55 90q15 14 30 0v22q-15 4-30 0z" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><path d="M34 80q-12-8-8-22 2-4 6-2" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="26" cy="56" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><path d="M106 86q12 0 14 10" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="120" cy="96" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><ellipse cx="58" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><ellipse cx="82" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><circle cx="59" cy="76" r="3.2" fill="#151415"/><circle cx="83" cy="76" r="3.2" fill="#151415"/><circle cx="60.5" cy="74.5" r="1.1" fill="#fdfcf5"/><circle cx="84.5" cy="74.5" r="1.1" fill="#fdfcf5"/><ellipse cx="48" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><ellipse cx="92" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><path d="M64 86q6 6 12 0" fill="none" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 32)"><path d="M0-18 4-6H16L6 2l4 12L0 6-10 14-6 2-16-6H-4z" fill="#f5dc5a" stroke="#151415" stroke-width="2.2" stroke-linejoin="round"/><circle cx="-.5" cy="-1" r="1.5" fill="#151415"/></g><path d="M70 48V42" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 102)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#151415" text-anchor="middle"><text y="0">♍</text></g></g><g opacity=".8"><path d="M20 36l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ef7065" stroke="#151415" stroke-width="1.2"/><path d="M118 24l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#f5dc5a" stroke="#151415" stroke-width="1.2"/></g></svg></div><div class=terminal-card><div class=bar><span class=dot></span><span class=dot></span><span class=dot></span>
+<span class=who>billy@mbp-m3 ~ %</span></div><div class=body><div><span class=prompt>$</span> cat about.yml</div><div style=margin-top:8px><span class=key>name</span>: Billy<br><span class=key>role</span>: Backend Developer<br><span class=key>stack</span>: [<span class=str>Go</span>, <span class=str>Python</span>, <span class=str>Swift</span>]<br><span class=key>focus</span>: cloud-native + AI tooling<br><span class=key>email</span>: billychen826@gmail.com<br><span class=key>sign</span>: <span class=num>♍</span> virgo · v0.1<br></div><div style=margin-top:12px><span class=prompt>$</span> <span class=cursor-blink></span></div></div></div><div class=sticky-note>✦ 用 <u>⌘K</u> 可以快速搜索</div></div></section><section><div class=section-header><div><div class="kicker mono">// featured</div><h2 class=display><span style=background:var(--coral)>置顶</span></h2></div><span class="tail mono">// pinned for a reason</span></div><div class=featured-grid><a class=featured-card href=/posts/rag-graphrag-context/><svg viewBox="0 0 240 140" preserveAspectRatio="xMidYMid slice" style="width:100%;height:180px;display:block;background:var(--pink)"><rect x="30" y="40" width="54" height="60" rx="4" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><text x="57" y="75" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">.md</text><rect x="94" y="40" width="54" height="60" rx="4" fill="#151415" stroke="#151415" stroke-width="2"/><text x="121" y="75" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="#f5dc5a">git</text><rect x="158" y="40" width="54" height="60" rx="4" fill="#b5f26a" stroke="#151415" stroke-width="2"/><text x="185" y="75" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">✓ live</text><path d="M84 70H94m54 0h10" stroke="#151415" stroke-width="2"/><polygon points="90,66 96,70 90,74" fill="#151415"/><polygon points="154,66 160,70 154,74" fill="#151415"/></svg><div class=body><div class=meta><span class="chip sm pinned">★ PINNED</span>
+<span class="chip sm" style=background:var(--yellow)>AI</span></div><h3 class=display>RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考</h3><div class=en>A deep dive into RAG, GraphRAG, Graphiti, and the long-context era</div><p class=desc>从 RAG 的基础原理讲起，聊聊 GraphRAG、Graphiti 这些进化版本，以及在 1M context 时代，RAG 到底会不会被淘汰。</p><div class=foot><span>2025-11-05</span><span>·</span>
+<span>29 min read</span>
+<span class=read>Read ↗</span></div></div></a><a class=featured-card href=/posts/go-i18n-localization/><svg viewBox="0 0 240 140" preserveAspectRatio="xMidYMid slice" style="width:100%;height:180px;display:block;background:var(--mint)"><circle cx="120" cy="70" r="40" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><ellipse cx="120" cy="70" rx="40" ry="16" fill="none" stroke="#151415" stroke-width="1.5"/><ellipse cx="120" cy="70" rx="16" ry="40" fill="none" stroke="#151415" stroke-width="1.5"/><path d="M80 70q20-20 40 0t40 0" fill="none" stroke="#151415" stroke-width="1.5"/><text x="60" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">你好</text><text x="170" y="40" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Hi</text><text x="40" y="120" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">Hola</text><text x="180" y="120" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">こんにちは</text></svg><div class=body><div class=meta><span class="chip sm pinned">★ PINNED</span>
+<span class="chip sm" style=background:var(--yellow)>技术</span></div><h3 class=display>使用Go实现业务的多国本土化适配方案</h3><p class=desc>使用Go实现业务的多国本土化适配方案 在当今全球化的市场环境中，将产品或服务扩展到不同国家和地区已经成为众多企业的重要战略。然而，这一过程中面临的本土化挑战不容忽视。本文将探讨如何利用Go语言构建一套灵活、高效的多国本土化适配系统，从架构设 …</p><div class=foot><span>2025-05-08</span><span>·</span>
+<span>19 min read</span>
+<span class=read>Read ↗</span></div></div></a></div></section><section><div class=section-header><div><div class="kicker mono">$ ls -lt posts/</div><h2 class=display><span style=background:var(--yellow)>最新文章</span></h2></div><span class="tail mono">// recent</span></div><div class=term-list><a class=term-row href=/posts/rag-graphrag-context/><span class=dollar>$</span>
+<span class=date>2025-11-05</span>
+<span class=title>RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考</span>
+<span class=tags><span>#AI</span><span>#RAG</span>
+</span><span class=rt>29m →</span>
+</a><a class=term-row href=/posts/go-i18n-localization/><span class=dollar>$</span>
+<span class=date>2025-05-08</span>
+<span class=title>使用Go实现业务的多国本土化适配方案</span>
+<span class=tags><span>#Golang</span><span>#国际化</span>
+</span><span class=rt>19m →</span>
+</a><a class=term-row href=/posts/go-multilingual-localization/><span class=dollar>$</span>
+<span class=date>2025-05-08</span>
+<span class=title>使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战</span>
+<span class=tags><span>#Golang</span><span>#国际化</span>
+</span><span class=rt>19m →</span>
+</a><a class=term-row href=/posts/go-mcp-claude/><span class=dollar>$</span>
+<span class=date>2025-04-08</span>
+<span class=title>使用Go开发MCP并接入Claude Desktop：go-mcp库实践</span>
+<span class=tags><span>#Go</span><span>#Claude</span>
+</span><span class=rt>20m →</span>
+</a><a class=term-row href=/posts/golang-beginner-guide/><span class=dollar>$</span>
+<span class=date>2025-03-31</span>
+<span class=title>Go语言入门指南：从零开始的Go编程之旅</span>
+<span class=tags><span>#Go</span><span>#Programming</span>
+</span><span class=rt>26m →</span></a><div class=term-list-foot><span class=count>—— showing 5 of 8 ——</span>
+<a href=/posts/>view all ↗</a></div></div></section><section class=now-stack style=margin-bottom:80px><div class=now-card><div class="ribbon mono">/now · updated today</div><div class=title-row><h3 class=display>What I'm up to</h3><span class=zh>// 此刻</span></div><div class=now-list><div class=now-item><div class=label>正在写</div><div class=text>Go i18n 深度系列第 3 篇</div></div><div class=now-item><div class=label>正在读</div><div class=text>《Designing Data-Intensive Applications》</div></div><div class=now-item><div class=label>正在做</div><div class=text>go-mcp v0.3 — 加入 resource templates</div></div><div class=now-item><div class=label>正在玩</div><div class=text>Claude Code + Feishu bot 自动化工作流</div></div></div></div><div class=stack-card><div class=title-row><h3 class=display>Stack</h3><span class=zh>// tools I reach for</span></div><div class=stack-grid><div class=stack-tile title=Go><div class=glyph style=background:#00add8>Go</div><div class=name>Go</div></div><div class=stack-tile title=Python><div class=glyph style=background:#3776ab>Py</div><div class=name>Python</div></div><div class=stack-tile title=Swift><div class=glyph style=background:#fa7343>Sw</div><div class=name>Swift</div></div><div class=stack-tile title=React><div class=glyph style=background:#61dafb>Re</div><div class=name>React</div></div><div class=stack-tile title=PostgreSQL><div class=glyph style=background:#336791>Pg</div><div class=name>PostgreSQL</div></div><div class=stack-tile title=MongoDB><div class=glyph style=background:#47a248>Mo</div><div class=name>MongoDB</div></div><div class=stack-tile title=Redis><div class=glyph style=background:#dc382d>Rd</div><div class=name>Redis</div></div><div class=stack-tile title=Spanner><div class=glyph style=background:#4285f4>Sp</div><div class=name>Spanner</div></div><div class=stack-tile title=Docker><div class=glyph style=background:#2496ed>Dk</div><div class=name>Docker</div></div><div class=stack-tile title=Kubernetes><div class=glyph style=background:#326ce5>K8</div><div class=name>Kubernetes</div></div><div class=stack-tile title=GCP><div class=glyph style=background:#4285f4>GC</div><div class=name>GCP</div></div><div class=stack-tile title=AWS><div class=glyph style=background:#f90>AW</div><div class=name>AWS</div></div></div></div></section><section><div class=section-header><div><div class="kicker mono">// <a href=https://github.com/virgoC0der target=_blank rel=noopener class=kicker-link>github.com/virgoC0der</a></div><h2 class=display><span style=background:var(--lime)>过去一年</span></h2></div><span class="tail mono">// contributions</span></div><div class=heatmap-card><div class=heatmap-wrap><div class=heatmap-inner><div class=heatmap-months><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span></div><div class=heatmap-days><span>Mon</span><span>Wed</span><span>Fri</span></div><div class=heatmap-grid id=heatmap></div></div></div><div class=heatmap-foot><span><strong>743</strong> contributions in the last year</span><div class=heatmap-legend>Less<div class="sq heatmap-l0"></div><div class="sq heatmap-l1"></div><div class="sq heatmap-l2"></div><div class="sq heatmap-l3"></div><div class="sq heatmap-l4"></div>More</div></div></div></section></div><script>(function(){if(s=document.getElementById("heatmap"),!s)return;for(var e,t,n,s,i,r,c=53,l=7,a=document.createDocumentFragment(),o=0;o<c;o++)for(t=0;t<l;t++)r=(o*7+t)*31,e=Math.abs(Math.sin(r)*1e4%1),i=e<.4?0:e<.65?1:e<.85?2:e<.95?3:4,n=document.createElement("div"),n.className="heatmap-cell heatmap-l"+i,n.title=i+" commits",a.appendChild(n);s.appendChild(a)})()</script></main><footer class=site-foot><div class=wrap><div><div class=brand-row><svg viewBox="0 0 140 140" width="56" height="56" style="display:block"><ellipse cx="70" cy="128" rx="38" ry="4" fill="rgba(0,0,0,0.15)"/><g><rect x="52" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><rect x="78" y="108" width="10" height="14" rx="5" fill="#cfc2f1" stroke="#151415" stroke-width="2.2"/><ellipse cx="57" cy="122" rx="8" ry="3.5" fill="#151415"/><ellipse cx="83" cy="122" rx="8" ry="3.5" fill="#151415"/><path d="M32 78q0-30 38-30t38 30v28q0 10-12 10H44q-12 0-12-10z" fill="#e5d7ff" stroke="#151415" stroke-width="2.6" stroke-linejoin="round"/><path d="M55 90q15 14 30 0v22q-15 4-30 0z" fill="#fdfcf5" stroke="#151415" stroke-width="2"/><path d="M34 80q-12-8-8-22 2-4 6-2" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="26" cy="56" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><path d="M106 86q12 0 14 10" fill="none" stroke="#151415" stroke-width="2.6" stroke-linecap="round"/><circle cx="120" cy="96" r="5" fill="#e5d7ff" stroke="#151415" stroke-width="2.2"/><ellipse cx="58" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><ellipse cx="82" cy="74" rx="7" ry="8" fill="#fdfcf5" stroke="#151415" stroke-width="2.2"/><circle cx="59" cy="76" r="3.2" fill="#151415"/><circle cx="83" cy="76" r="3.2" fill="#151415"/><circle cx="60.5" cy="74.5" r="1.1" fill="#fdfcf5"/><circle cx="84.5" cy="74.5" r="1.1" fill="#fdfcf5"/><ellipse cx="48" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><ellipse cx="92" cy="82" rx="3.5" ry="2" fill="#ef7065" opacity=".6"/><path d="M64 86q6 6 12 0" fill="none" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 32)"><path d="M0-18 4-6H16L6 2l4 12L0 6-10 14-6 2-16-6H-4z" fill="#f5dc5a" stroke="#151415" stroke-width="2.2" stroke-linejoin="round"/><circle cx="-.5" cy="-1" r="1.5" fill="#151415"/></g><path d="M70 48V42" stroke="#151415" stroke-width="2" stroke-linecap="round"/><g transform="translate(70 102)" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="#151415" text-anchor="middle"><text y="0">♍</text></g></g><g opacity=".8"><path d="M20 36l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#ef7065" stroke="#151415" stroke-width="1.2"/><path d="M118 24l1.5 3 3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z" fill="#f5dc5a" stroke="#151415" stroke-width="1.2"/></g></svg><div><div class=title>Billy's Blog</div><div class=info>built with Hugo · hosted on GitHub Pages</div></div></div><div class=quote-mono><span class=c>// </span>"First, solve the problem. Then, write the code."<br><span style=opacity:.5>— John Johnson</span></div></div><div><div class=col-head>Pages</div><a href=/>/~</a>
+<a href=/posts/>/posts</a>
+<a href=/tags/>/tags</a>
+<a href=/about/>/about</a>
+<a href=/now/>/now</a></div><div><div class=col-head>Elsewhere</div><a href=https://github.com/virgoC0der target=_blank rel=noopener>GitHub ↗</a>
+<a href=mailto:billychen826@gmail.com>Email ↗</a>
+<a href=/index.xml>RSS ↗</a></div><div><div class=col-head>Colophon</div><div class=row>Inter + Fraunces + JetBrains Mono</div><div class=row>© 2026 Billy (@virgoC0der)</div></div></div><div class=tag-strip><span>✦ made with ♥ and too much coffee · Billy · ♍ virgo edition</span>
+<span>v0.3.1 · hugo</span></div></footer></body></html>

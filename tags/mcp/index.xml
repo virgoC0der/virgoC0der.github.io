@@ -21,95 +21,95 @@
 &lt;/ul>
 &lt;h2 id="开发环境准备">开发环境准备&lt;/h2>
 &lt;p>在开始开发之前，我们需要准备以下环境：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装Go (确保版本至少为1.18)&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 安装Go (确保版本至少为1.18)&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>brew install go
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 克隆go-mcp仓库&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 克隆go-mcp仓库&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>git clone https://github.com/virgoC0der/go-mcp.git
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd go-mcp
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9ece6a">cd&lt;/span> go-mcp
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 安装依赖&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic"># 安装依赖&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod tidy
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="实现应用启动器mcp服务">实现应用启动器MCP服务&lt;/h2>
 &lt;p>参考go-mcp仓库中的examples/app-launcher示例，我们来实现一个应用启动器MCP服务，这个服务将允许Claude Desktop打开本地应用程序。&lt;/p>
 &lt;h3 id="1-创建项目结构">1. 创建项目结构&lt;/h3>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir claude-app-launcher
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd claude-app-launcher
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>mkdir claude-app-launcher
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9ece6a">cd&lt;/span> claude-app-launcher
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>go mod init github.com/yourusername/claude-app-launcher
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="2-实现服务结构">2. 实现服务结构&lt;/h3>
 &lt;p>首先，让我们实现一个满足MCP协议要求的服务结构：&lt;/p>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">package&lt;/span> &lt;span style="color:#a6e22e">main&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-go" data-lang="go">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#7dcfff">package&lt;/span> main
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#f92672">import&lt;/span> (
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;context&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;encoding/json&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;fmt&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;log&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;os&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;os/exec&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;os/signal&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;runtime&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;sync&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;syscall&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#7dcfff">import&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;context&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;encoding/json&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;fmt&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;log&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;os&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;os/exec&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;os/signal&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;runtime&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;sync&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;syscall&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;github.com/virgoC0der/go-mcp&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;github.com/virgoC0der/go-mcp&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;github.com/virgoC0der/go-mcp/internal/types&amp;#34;&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#e6db74">&amp;#34;github.com/virgoC0der/go-mcp/transport&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;github.com/virgoC0der/go-mcp/internal/types&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#9ece6a">&amp;#34;github.com/virgoC0der/go-mcp/transport&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>)
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// AppLauncherServer implements the MCP service interface&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">type&lt;/span> &lt;span style="color:#a6e22e">AppLauncherServer&lt;/span> &lt;span style="color:#66d9ef">struct&lt;/span> {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">prompts&lt;/span> []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Prompt&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">tools&lt;/span> []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Tool&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">resources&lt;/span> []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Resource&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic">// AppLauncherServer implements the MCP service interface&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9d7cd8">type&lt;/span> AppLauncherServer &lt;span style="color:#9d7cd8">struct&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	prompts []types.Prompt
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	tools []types.Tool
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	resources []types.Resource
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// NewAppLauncherServer creates a new app launcher server instance&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">func&lt;/span> &lt;span style="color:#a6e22e">NewAppLauncherServer&lt;/span>() &lt;span style="color:#f92672">*&lt;/span>&lt;span style="color:#a6e22e">AppLauncherServer&lt;/span> {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#a6e22e">s&lt;/span> &lt;span style="color:#f92672">:=&lt;/span> &lt;span style="color:#f92672">&amp;amp;&lt;/span>&lt;span style="color:#a6e22e">AppLauncherServer&lt;/span>{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#75715e">// 定义支持的提示&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">prompts&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Prompt&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#414868;font-style:italic">// NewAppLauncherServer creates a new app launcher server instance&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#9d7cd8">func&lt;/span> &lt;span style="color:#7aa2f7">NewAppLauncherServer&lt;/span>() &lt;span style="color:#9ece6a;font-weight:bold">*&lt;/span>AppLauncherServer {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	s &lt;span style="color:#9ece6a;font-weight:bold">:=&lt;/span> &lt;span style="color:#9ece6a;font-weight:bold">&amp;amp;&lt;/span>AppLauncherServer{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#414868;font-style:italic">// 定义支持的提示&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		prompts: []types.Prompt{
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;openApp&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Open a macOS application&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Arguments&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">PromptArgument&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Name: &lt;span style="color:#9ece6a">&amp;#34;openApp&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Description: &lt;span style="color:#9ece6a">&amp;#34;Open a macOS application&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Arguments: []types.PromptArgument{
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;appName&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Name of the application to open&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#a6e22e">Required&lt;/span>: &lt;span style="color:#66d9ef">true&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						Name: &lt;span style="color:#9ece6a">&amp;#34;appName&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						Description: &lt;span style="color:#9ece6a">&amp;#34;Name of the application to open&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						Required: &lt;span style="color:#e0af68">true&lt;/span>,
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		},
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#75715e">// 定义支持的工具&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">tools&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Tool&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#414868;font-style:italic">// 定义支持的工具&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		tools: []types.Tool{
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;openApp&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Open a macOS application&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">InputSchema&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#e6db74">&amp;#34;type&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;object&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#e6db74">&amp;#34;properties&amp;#34;&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#e6db74">&amp;#34;appName&amp;#34;&lt;/span>: &lt;span style="color:#66d9ef">map&lt;/span>[&lt;span style="color:#66d9ef">string&lt;/span>]&lt;span style="color:#66d9ef">interface&lt;/span>{}{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>							&lt;span style="color:#e6db74">&amp;#34;type&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;string&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>							&lt;span style="color:#e6db74">&amp;#34;description&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Name of the application to open&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Name: &lt;span style="color:#9ece6a">&amp;#34;openApp&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Description: &lt;span style="color:#9ece6a">&amp;#34;Open a macOS application&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				InputSchema: &lt;span style="color:#9d7cd8">map&lt;/span>[&lt;span style="color:#41a6b5">string&lt;/span>]&lt;span style="color:#9d7cd8">interface&lt;/span>{}{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#9ece6a">&amp;#34;type&amp;#34;&lt;/span>: &lt;span style="color:#9ece6a">&amp;#34;object&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#9ece6a">&amp;#34;properties&amp;#34;&lt;/span>: &lt;span style="color:#9d7cd8">map&lt;/span>[&lt;span style="color:#41a6b5">string&lt;/span>]&lt;span style="color:#9d7cd8">interface&lt;/span>{}{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						&lt;span style="color:#9ece6a">&amp;#34;appName&amp;#34;&lt;/span>: &lt;span style="color:#9d7cd8">map&lt;/span>[&lt;span style="color:#41a6b5">string&lt;/span>]&lt;span style="color:#9d7cd8">interface&lt;/span>{}{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>							&lt;span style="color:#9ece6a">&amp;#34;type&amp;#34;&lt;/span>: &lt;span style="color:#9ece6a">&amp;#34;string&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>							&lt;span style="color:#9ece6a">&amp;#34;description&amp;#34;&lt;/span>: &lt;span style="color:#9ece6a">&amp;#34;Name of the application to open&amp;#34;&lt;/span>,
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>						},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					},
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#e6db74">&amp;#34;required&amp;#34;&lt;/span>: []&lt;span style="color:#66d9ef">string&lt;/span>{&lt;span style="color:#e6db74">&amp;#34;appName&amp;#34;&lt;/span>},
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>					&lt;span style="color:#9ece6a">&amp;#34;required&amp;#34;&lt;/span>: []&lt;span style="color:#41a6b5">string&lt;/span>{&lt;span style="color:#9ece6a">&amp;#34;appName&amp;#34;&lt;/span>},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		},
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#75715e">// 定义支持的资源&lt;/span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#a6e22e">resources&lt;/span>: []&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">Resource&lt;/span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		&lt;span style="color:#414868;font-style:italic">// 定义支持的资源&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		resources: []types.Resource{
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">URI&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;apps&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Name&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;apps&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">Description&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;List of common macOS applications&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				&lt;span style="color:#a6e22e">MimeType&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;application/json&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				URI: &lt;span style="color:#9ece6a">&amp;#34;apps&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Name: &lt;span style="color:#9ece6a">&amp;#34;apps&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				Description: &lt;span style="color:#9ece6a">&amp;#34;List of common macOS applications&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>				MimeType: &lt;span style="color:#9ece6a">&amp;#34;application/json&amp;#34;&lt;/span>,
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>			},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>		},
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	}
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">s&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>	&lt;span style="color:#bb9af7">return&lt;/span> s
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="3-实现服务接口方法">3. 实现服务接口方法&lt;/h3>
 &lt;p>接下来，我们需要实现MCP服务接口所需的各种方法：&lt;/p></description></item><item><title>Claude+MCP一键生成博客：AI助力内容创作与自动化部署</title><link>https://virgoC0der.github.io/posts/claude-mcp-blog-automation/</link><pubDate>Mon, 31 Mar 2025 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoC0der.github.io/posts/claude-mcp-blog-automation/</guid><description>&lt;h1 id="claudemcp一键生成博客ai助力内容创作与自动化部署">Claude+MCP一键生成博客：AI助力内容创作与自动化部署&lt;/h1>
@@ -129,31 +129,31 @@
 &lt;li>点击Settings -&amp;gt; Developer -&amp;gt; Edit Config&lt;/li>
 &lt;li>输入以下配置：&lt;/li>
 &lt;/ol>
-&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;mcpServers&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;fileSystme&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;npx&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;args&amp;#34;&lt;/span>: [
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;-y&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@modelcontextprotocol/server-filesystem&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;YOUR PATH&amp;#34;&lt;/span>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-json" data-lang="json">&lt;span style="display:flex;">&lt;span>{
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;mcpServers&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;fileSystme&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#9ece6a">&amp;#34;npx&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;args&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;-y&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;@modelcontextprotocol/server-filesystem&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;YOUR PATH&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;playwright&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;npx&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;args&amp;#34;&lt;/span>: [
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@playwright/mcp@latest&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;playwright&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#9ece6a">&amp;#34;npx&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;args&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;@playwright/mcp@latest&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> },
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;desktop-commander&amp;#34;&lt;/span>: {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;npx&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#f92672">&amp;#34;args&amp;#34;&lt;/span>: [
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;-y&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@smithery/cli@latest&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;run&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;@wonderwhy-er/desktop-commander&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;--key&amp;#34;&lt;/span>,
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#e6db74">&amp;#34;YOUR PERSONAL KEY&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;desktop-commander&amp;#34;&lt;/span>: {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;command&amp;#34;&lt;/span>: &lt;span style="color:#9ece6a">&amp;#34;npx&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#bb9af7">&amp;#34;args&amp;#34;&lt;/span>: [
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;-y&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;@smithery/cli@latest&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;run&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;@wonderwhy-er/desktop-commander&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;--key&amp;#34;&lt;/span>,
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#9ece6a">&amp;#34;YOUR PERSONAL KEY&amp;#34;&lt;/span>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> ]
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
