@@ -1,0 +1,11 @@
+name = "PostHog Blog"
+license = "MIT"
+description = "PostHog-inspired neo-brutalist Hugo theme with warm palette, hand-drawn elements, and a terminal vibe."
+homepage = "https://github.com/virgoC0der/virgoC0der.github.io"
+tags = ["blog", "personal", "posthog", "neo-brutalist"]
+features = ["blog", "posts", "tags", "categories", "about"]
+min_version = "0.80.0"
+
+[author]
+  name = "Billy"
+  homepage = "https://github.com/virgoC0der"

@@ -1,0 +1,43 @@
+{{ define "main" }}
+{{- $pages := .Pages -}}
+{{- if .IsSection -}}{{- $pages = .RegularPages -}}{{- end -}}
+<div class="page-wrap">
+  <div class="page-title-row">
+    <div class="kicker mono">~/{{ .Section | default "pages" }} $ ls -la | wc -l → <strong>{{ len $pages }}</strong></div>
+    <h1 class="display">
+      {{ if eq .Section "posts" }}All <span class="hl" style="background:var(--coral-soft)">posts</span>
+      {{ else }}{{ .Title }}
+      {{ end }}
+    </h1>
+    {{ with .Description }}<p>{{ . }}</p>{{ else }}
+      {{ if eq .Section "posts" }}<p>关于 Go、AI 基础设施、MCP 和小型工具的文章 — 都是我踩过的坑和学到的事。</p>{{ end }}
+    {{ end }}
+  </div>
+
+  {{ if eq .Section "posts" }}
+  <div class="filter-bar">
+    <span class="label">filter:</span>
+    <a class="filter-chip active" href="{{ "/posts/" | relLangURL }}">all · {{ len $pages }}</a>
+    {{ range $.Site.Taxonomies.categories }}
+      <a class="filter-chip" href="{{ .Page.RelPermalink }}">{{ .Page.Title }} · {{ .Count }}</a>
+    {{ end }}
+  </div>
+  {{ end }}
+
+  <div class="posts-grid">
+    {{ range $pages }}
+    <a class="post-card" href="{{ .RelPermalink }}">
+      {{ partial "post-cover.html" (dict "page" . "height" 140) }}
+      <div class="body">
+        <div class="date mono">{{ .Date.Format "2006-01-02" }} · {{ math.Ceil (div (countwords .Content) 220.0) }}m</div>
+        <h3 class="display">{{ .Title }}</h3>
+        <p>{{ .Description | default (.Summary | plainify | truncate 110) }}</p>
+        <div class="tags">
+          {{ range first 3 .Params.tags }}<span class="chip sm" style="background:var(--cream-warm)">#{{ . }}</span>{{ end }}
+        </div>
+      </div>
+    </a>
+    {{ end }}
+  </div>
+</div>
+{{ end }}

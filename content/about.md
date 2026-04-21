@@ -2,6 +2,8 @@
 title: "About Me"
 date: 2023-10-27T10:00:00+08:00
 draft: false
+type: "about"
+layout: "single"
 ---
 
 # 👋 Hello, I'm virgoC0der!

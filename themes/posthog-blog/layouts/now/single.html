@@ -1,0 +1,30 @@
+{{ define "main" }}
+<div class="now-page-wrap">
+  <div class="mono" style="font-size:13px;color:var(--coral);margin-bottom:12px">~/now $ date &amp;&amp; cat status.yml</div>
+  <h1 class="display">/<span class="hl">now</span></h1>
+  <p style="font-size:18px;color:var(--ink-soft);margin-top:18px;max-width:560px">
+    灵感来自 <a href="https://sive.rs/nowff" style="color:var(--coral)">Derek Sivers' /now page</a> — 这页回答一个问题：<em>{{ .Site.Params.author.name | default "Billy" }} 现在到底在搞什么</em>。
+  </p>
+  <div class="mono" style="font-size:12px;color:var(--mute);margin-top:4px">Last updated: {{ .Date.Format "2006-01-02" }} · 上海</div>
+
+  <div class="now-entries">
+    {{ range (.Site.Params.now | default (slice
+      (dict "label" "正在写" "text" "Go i18n 深度系列第 3 篇")
+      (dict "label" "正在读" "text" "《Designing Data-Intensive Applications》")
+      (dict "label" "正在做" "text" "go-mcp v0.3 — 加入 resource templates")
+      (dict "label" "正在玩" "text" "Claude Code + Feishu bot 自动化工作流")
+    )) }}
+    <div class="now-entry">
+      <div class="label">{{ .label }}</div>
+      <div class="text">{{ .text }}</div>
+    </div>
+    {{ end }}
+  </div>
+
+  <div class="md" style="margin-top:30px">{{ .Content }}</div>
+
+  <div class="now-footnote">
+    如果你也在写 Go 工具 / MCP server / 自用 CLI，<a href="mailto:{{ .Site.Params.author.email }}">给我发邮件</a> — 我很乐意聊聊。
+  </div>
+</div>
+{{ end }}

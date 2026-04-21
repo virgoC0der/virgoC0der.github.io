@@ -1,0 +1,47 @@
+{{- $cur := .RelPermalink -}}
+{{- $isHome := eq $cur "/" -}}
+{{- $isPosts := or (hasPrefix $cur "/posts") (eq .Section "posts") -}}
+{{- $isTags := or (hasPrefix $cur "/tags") (eq .Section "tags") -}}
+{{- $isCats := or (hasPrefix $cur "/categories") (eq .Section "categories") -}}
+{{- $isAbout := hasPrefix $cur "/about" -}}
+{{- $isNow := hasPrefix $cur "/now" -}}
+<header class="topbar">
+  <div class="topbar-url">
+    <div class="topbar-dots"><span></span><span></span><span></span></div>
+    <div class="topbar-addr">
+      <span class="mute">https://</span>
+      <span class="brand">billy.dev</span>
+      <span class="mute">{{ if not $isHome }}{{ $cur }}{{ end }}</span>
+      <span class="cmdk">⌘K</span>
+    </div>
+  </div>
+
+  <nav class="tabs-row" aria-label="Main">
+    <a class="tabs-logo" href="{{ "/" | relLangURL }}">
+      {{ partial "mascot-mark.html" 32 }}
+      <div>
+        <div class="display title">{{ .Site.Title }}</div>
+        <div class="mono handle">@virgoC0der</div>
+      </div>
+    </a>
+
+    <a class="tab{{ if $isHome }} active{{ end }}" href="{{ "/" | relLangURL }}" style="--tab-color: var(--yellow);">
+      <span class="slash">/</span>~
+    </a>
+    <a class="tab{{ if $isPosts }} active{{ end }}" href="{{ "/posts/" | relLangURL }}" style="--tab-color: var(--coral-soft);">
+      <span class="slash">/</span>posts
+    </a>
+    <a class="tab{{ if $isTags }} active{{ end }}" href="{{ "/tags/" | relLangURL }}" style="--tab-color: var(--mint);">
+      <span class="slash">/</span>tags
+    </a>
+    <a class="tab{{ if $isAbout }} active{{ end }}" href="{{ "/about/" | relLangURL }}" style="--tab-color: var(--lavender);">
+      <span class="slash">/</span>about
+    </a>
+    <a class="tab{{ if $isNow }} active{{ end }}" href="{{ "/now/" | relLangURL }}" style="--tab-color: var(--peach);">
+      <span class="slash">/</span>now
+    </a>
+
+    <div class="tabs-fill"></div>
+    <a class="tab-rss" href="{{ "/index.xml" | relLangURL }}">RSS ↗</a>
+  </nav>
+</header>

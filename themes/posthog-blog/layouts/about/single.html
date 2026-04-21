@@ -1,0 +1,77 @@
+{{ define "main" }}
+<div class="page-wrap" style="max-width:1040px">
+  <div class="mono" style="font-size:13px;color:var(--coral);margin-bottom:12px">~/about $ cat README.md</div>
+
+  <div class="about-hero">
+    <div>
+      <h1 class="display">
+        👋 Hello,<br>I'm <span class="hl" style="background:var(--yellow)">{{ .Site.Params.author.name | default "Billy" }}</span>.
+      </h1>
+      <p>{{ .Description | default "后端开发者，专注于可扩展系统和云原生应用。平时在 Go 里打滚，偶尔写 Python 和 Swift，沉迷于把 AI 工具塞到工作流的每个缝隙里。" }}</p>
+      <div class="links">
+        {{ with .Site.Params.github }}<a class="cta" href="{{ . }}" target="_blank" rel="noopener">GitHub ↗</a>{{ end }}
+        {{ with .Site.Params.author.email }}<a class="cta mint" href="mailto:{{ . }}">Email ✉</a>{{ end }}
+        {{ partial "squiggle.html" (dict "width" 50) }}
+        <span class="mono" style="font-size:13px;color:var(--mute)">@virgoC0der</span>
+      </div>
+    </div>
+    <div>
+      <div class="avatar-box">
+        {{ partial "mascot.html" (dict "size" 200 "pose" "wave" "animated" true) }}
+        <div class="cap mono">Virg · my mascot ♍</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="md" style="margin-bottom:40px">
+    {{ .Content }}
+  </div>
+
+  <div class="about-grid">
+    <div class="tile span-3" style="background:var(--lavender)">
+      <div class="label">◊ What I do</div>
+      <div class="stats-grid">
+        <div><strong>Languages</strong><br><span style="color:var(--ink-soft)">Go, Python, Swift, React</span></div>
+        <div><strong>Databases</strong><br><span style="color:var(--ink-soft)">MySQL, Postgres, MongoDB, Redis, Spanner</span></div>
+        <div><strong>Cloud</strong><br><span style="color:var(--ink-soft)">GCP, AWS</span></div>
+        <div><strong>DevOps</strong><br><span style="color:var(--ink-soft)">Docker, Kubernetes, CI/CD</span></div>
+      </div>
+    </div>
+    <div class="tile span-3" style="background:var(--mint)">
+      <div class="label">🎯 Ask me about</div>
+      <ul>
+        <li>后端开发 &amp; API 设计</li>
+        <li>微服务架构</li>
+        <li>云原生 &amp; 分布式系统</li>
+        <li>MCP 工具开发</li>
+      </ul>
+    </div>
+
+    <div class="tile span-2" style="background:var(--yellow)">
+      <div class="big-num">2025</div>
+      <div class="sub">博客创立</div>
+    </div>
+    <div class="tile span-2" style="background:var(--peach)">
+      <div class="big-num">{{ len (where .Site.RegularPages "Section" "posts") }}</div>
+      <div class="sub">文章已发表</div>
+    </div>
+    <div class="tile span-2" style="background:var(--lime)">
+      <div class="big-num">♍</div>
+      <div class="sub">处女座 · 9月</div>
+    </div>
+
+    <div class="tile span-6 about-fun">
+      <span class="icon">💡</span>
+      <div style="flex:1">
+        <div class="t display">Fun fact</div>
+        <div class="s">I believe good code is self-documenting... but I comment anyway! 🚀</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quote-block">
+    <div class="q">"First, solve the problem.<br>Then, write the code."</div>
+    <div class="a mono">— John Johnson</div>
+  </div>
+</div>
+{{ end }}

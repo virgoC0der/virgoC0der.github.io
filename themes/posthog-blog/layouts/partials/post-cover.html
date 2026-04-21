@@ -1,0 +1,21 @@
+{{- /* Pick cover art kind + background color from a post's tags/slug */ -}}
+{{- $page := .page -}}
+{{- $height := default 140 .height -}}
+{{- $kind := "terminal" -}}
+{{- $color := "var(--yellow)" -}}
+
+{{- $tags := $page.Params.tags | default slice -}}
+{{- $slug := path.BaseName $page.File.Path -}}
+
+{{- if in $tags "MCP" -}}{{- $kind = "mcp" -}}{{- $color = "var(--lavender)" -}}
+{{- else if in $tags "Docker" -}}{{- $kind = "docker" -}}{{- $color = "var(--coral-soft)" -}}
+{{- else if in $tags "Claude" -}}{{- $kind = "automation" -}}{{- $color = "var(--pink)" -}}
+{{- else if in $tags "自动化" -}}{{- $kind = "automation" -}}{{- $color = "var(--pink)" -}}
+{{- else if in $tags "i18n" -}}{{- $kind = "globe" -}}{{- $color = "var(--mint)" -}}
+{{- else if in $tags "Ollama" -}}{{- $kind = "llm" -}}{{- $color = "var(--lime)" -}}
+{{- else if in $tags "AI Deployment" -}}{{- $kind = "llm" -}}{{- $color = "var(--lime)" -}}
+{{- else if in $tags "Programming" -}}{{- $kind = "gopher" -}}{{- $color = "var(--peach)" -}}
+{{- else if in $tags "Go" -}}{{- $kind = "terminal" -}}{{- $color = "var(--yellow)" -}}
+{{- end -}}
+
+{{ partial "cover-art.html" (dict "kind" $kind "color" $color "height" $height) }}

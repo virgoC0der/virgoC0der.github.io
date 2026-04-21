@@ -1,0 +1,42 @@
+{{ define "main" }}
+<div class="page-wrap">
+  <div class="page-title-row">
+    <div class="kicker mono">~/{{ .Data.Plural }} $ grep -r ./posts</div>
+    <h1 class="display">
+      {{ if eq .Data.Plural "tags" }}Tag <span class="hl" style="background:var(--mint)">cloud</span>
+      {{ else if eq .Data.Plural "categories" }}All <span class="hl" style="background:var(--peach)">categories</span>
+      {{ else }}{{ .Title }}
+      {{ end }}
+    </h1>
+    <p>字号越大 = 文章越多。点一下就能看这个 {{ .Data.Singular }} 下所有文章。</p>
+  </div>
+
+  {{ if eq .Data.Plural "tags" }}
+  <div class="tag-cloud">
+    {{- $terms := .Data.Terms -}}
+    {{- range $terms.Alphabetical -}}
+      {{- $count := .Count -}}
+      {{- $size := "s1" -}}
+      {{- if ge $count 5 -}}{{- $size = "s5" -}}
+      {{- else if ge $count 3 -}}{{- $size = "s4" -}}
+      {{- else if ge $count 2 -}}{{- $size = "s3" -}}
+      {{- else -}}{{- $size = "s2" -}}
+      {{- end -}}
+      <a class="{{ $size }}" href="{{ .Page.RelPermalink }}">#{{ .Page.Title }}<sup>{{ $count }}</sup></a>
+    {{- end -}}
+  </div>
+  {{ end }}
+
+  {{ if eq .Data.Plural "categories" }}
+  <div class="categories-grid">
+    {{ range .Data.Terms.Alphabetical }}
+    <a class="cat" href="{{ .Page.RelPermalink }}">
+      <div class="icon">📚</div>
+      <div class="name display">{{ .Page.Title }}</div>
+      <div class="count mono">{{ .Count }} post{{ if gt .Count 1 }}s{{ end }}</div>
+    </a>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ end }}

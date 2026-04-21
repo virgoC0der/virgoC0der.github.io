@@ -1,0 +1,234 @@
+{{ define "main" }}
+{{- $posts := where .Site.RegularPages "Section" "posts" -}}
+{{- $pinned := first 2 $posts -}}
+{{- $recent := first 5 $posts -}}
+<div class="page-wrap">
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="hero-kicker">
+        <span class="dot"></span>
+        ~/blog $ whoami<span class="cursor-blink"></span>
+      </div>
+      <h1 class="display">
+        Hi, I'm <span class="highlight">{{ .Site.Params.author.name | default "Billy" }}</span>
+        <br>
+        <span class="sub">a backend </span>
+        <span class="curly">{ gopher }</span>
+      </h1>
+      <p class="hero-lede">
+        写 <span class="pill pill-go">Go</span>、调 <span class="pill pill-claude">Claude</span>、
+        造 <span class="pill pill-mcp">MCP</span> — 一个相信 <em>good code is self-documenting but I comment anyway</em> 的后端开发者。
+        这里是我的 <u class="wavy">实验室笔记</u>。
+      </p>
+      <div class="hero-ctas">
+        <a class="cta lg" href="{{ "/posts/" | relLangURL }}">读读最近的文章 →</a>
+        <a class="cta lg paper" href="{{ "/about/" | relLangURL }}">关于我</a>
+        {{ partial "squiggle.html" (dict "width" 60) }}
+      </div>
+      <div class="hero-stats">
+        <span><strong>{{ len $posts }}</strong> posts</span>
+        <span class="sep">·</span>
+        {{ with .Site.Taxonomies.tags }}<span><strong>{{ len . }}</strong> tags</span><span class="sep">·</span>{{ end }}
+        <span><strong>2025</strong> since</span>
+        <span class="sep">·</span>
+        <span>📍 中国</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-mascot">
+        {{ partial "mascot.html" (dict "size" 180 "pose" "wave" "animated" true) }}
+      </div>
+      <div class="terminal-card">
+        <div class="bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="who">{{ .Site.Params.author.name | default "billy" | lower }}@mbp-m3 ~ %</span>
+        </div>
+        <div class="body">
+          <div><span class="prompt">$</span> cat about.yml</div>
+          <div style="margin-top:8px">
+            <span class="key">name</span>:  {{ .Site.Params.author.name | default "Billy" }}<br>
+            <span class="key">role</span>:  Backend Developer<br>
+            <span class="key">stack</span>: [<span class="str">Go</span>, <span class="str">Python</span>, <span class="str">Swift</span>]<br>
+            <span class="key">focus</span>: cloud-native + AI tooling<br>
+            <span class="key">email</span>: {{ .Site.Params.author.email }}<br>
+            <span class="key">sign</span>:  <span class="num">♍</span> virgo · v0.1<br>
+          </div>
+          <div style="margin-top:12px"><span class="prompt">$</span> <span class="cursor-blink"></span></div>
+        </div>
+      </div>
+      <div class="sticky-note">✦ 用 <u>⌘K</u> 可以快速搜索</div>
+    </div>
+  </section>
+
+  <!-- FEATURED / PINNED -->
+  {{ if gt (len $pinned) 0 }}
+  <section>
+    <div class="section-header">
+      <div>
+        <div class="kicker mono">// featured</div>
+        <h2 class="display"><span style="background:var(--coral)">置顶</span></h2>
+      </div>
+      <span class="tail mono">// pinned for a reason</span>
+    </div>
+    <div class="featured-grid">
+      {{ range $pinned }}
+        <a class="featured-card" href="{{ .RelPermalink }}">
+          {{ partial "post-cover.html" (dict "page" . "height" 180) }}
+          <div class="body">
+            <div class="meta">
+              <span class="chip sm pinned">★ PINNED</span>
+              {{ with (index .Params.categories 0) }}<span class="chip sm" style="background:var(--yellow)">{{ . }}</span>{{ end }}
+            </div>
+            <h3 class="display">{{ .Title }}</h3>
+            {{ with .Params.title_en }}<div class="en">{{ . }}</div>{{ end }}
+            <p class="desc">{{ .Description | default (.Summary | plainify | truncate 120) }}</p>
+            <div class="foot">
+              <span>{{ .Date.Format "2006-01-02" }}</span><span>·</span>
+              <span>{{ math.Ceil (div (countwords .Content) 220.0) }} min read</span>
+              <span class="read">Read ↗</span>
+            </div>
+          </div>
+        </a>
+      {{ end }}
+    </div>
+  </section>
+  {{ end }}
+
+  <!-- RECENT POSTS -->
+  <section>
+    <div class="section-header">
+      <div>
+        <div class="kicker mono">$ ls -lt posts/</div>
+        <h2 class="display"><span style="background:var(--yellow)">最新文章</span></h2>
+      </div>
+      <span class="tail mono">// recent</span>
+    </div>
+    <div class="term-list">
+      {{ range $i, $p := $recent }}
+        <a class="term-row" href="{{ .RelPermalink }}">
+          <span class="dollar">$</span>
+          <span class="date">{{ .Date.Format "2006-01-02" }}</span>
+          <span class="title">{{ .Title }}</span>
+          <span class="tags">
+            {{ range first 2 .Params.tags }}<span>#{{ . }}</span>{{ end }}
+          </span>
+          <span class="rt">{{ math.Ceil (div (countwords .Content) 220.0) }}m →</span>
+        </a>
+      {{ end }}
+      <div class="term-list-foot">
+        <span class="count">—— showing {{ len $recent }} of {{ len $posts }} ——</span>
+        <a href="{{ "/posts/" | relLangURL }}">view all ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOW + STACK -->
+  <section class="now-stack" style="margin-bottom:80px">
+    <div class="now-card">
+      <div class="ribbon mono">/now · updated today</div>
+      <div class="title-row">
+        <h3 class="display">What I'm up to</h3>
+        <span class="zh">// 此刻</span>
+      </div>
+      <div class="now-list">
+        {{ range (.Site.Params.now | default (slice
+          (dict "label" "正在写" "text" "Go i18n 深度系列第 3 篇")
+          (dict "label" "正在读" "text" "《Designing Data-Intensive Applications》")
+          (dict "label" "正在做" "text" "go-mcp v0.3 — 加入 resource templates")
+          (dict "label" "正在玩" "text" "Claude Code + Feishu bot 自动化工作流")
+        )) }}
+        <div class="now-item">
+          <div class="label">{{ .label }}</div>
+          <div class="text">{{ .text }}</div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="title-row">
+        <h3 class="display">Stack</h3>
+        <span class="zh">// tools I reach for</span>
+      </div>
+      <div class="stack-grid">
+        {{ range (.Site.Params.stack | default (slice
+          (dict "name" "Go" "glyph" "Go" "color" "#00ADD8")
+          (dict "name" "Python" "glyph" "Py" "color" "#3776AB")
+          (dict "name" "Swift" "glyph" "Sw" "color" "#FA7343")
+          (dict "name" "React" "glyph" "Re" "color" "#61DAFB")
+          (dict "name" "PostgreSQL" "glyph" "Pg" "color" "#336791")
+          (dict "name" "MongoDB" "glyph" "Mo" "color" "#47A248")
+          (dict "name" "Redis" "glyph" "Rd" "color" "#DC382D")
+          (dict "name" "Spanner" "glyph" "Sp" "color" "#4285F4")
+          (dict "name" "Docker" "glyph" "Dk" "color" "#2496ED")
+          (dict "name" "Kubernetes" "glyph" "K8" "color" "#326CE5")
+          (dict "name" "GCP" "glyph" "GC" "color" "#4285F4")
+          (dict "name" "AWS" "glyph" "AW" "color" "#FF9900")
+        )) }}
+        <div class="stack-tile" title="{{ .name }}">
+          <div class="glyph" style="background:{{ .color }}">{{ .glyph }}</div>
+          <div class="name">{{ .name }}</div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </section>
+
+  <!-- GITHUB HEATMAP -->
+  <section>
+    <div class="section-header">
+      <div>
+        <div class="kicker mono">// <a href="{{ .Site.Params.github }}" target="_blank" rel="noopener" class="kicker-link">github.com/virgoC0der</a></div>
+        <h2 class="display"><span style="background:var(--lime)">过去一年</span></h2>
+      </div>
+      <span class="tail mono">// contributions</span>
+    </div>
+    <div class="heatmap-card">
+      <div class="heatmap-wrap">
+        <div class="heatmap-inner">
+          <div class="heatmap-months">
+            {{ range slice "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec" }}<span>{{ . }}</span>{{ end }}
+          </div>
+          <div class="heatmap-days">
+            <span>Mon</span><span>Wed</span><span>Fri</span>
+          </div>
+          <div class="heatmap-grid" id="heatmap"></div>
+        </div>
+      </div>
+      <div class="heatmap-foot">
+        <span><strong>743</strong> contributions in the last year</span>
+        <div class="heatmap-legend">
+          Less
+          <div class="sq heatmap-l0"></div>
+          <div class="sq heatmap-l1"></div>
+          <div class="sq heatmap-l2"></div>
+          <div class="sq heatmap-l3"></div>
+          <div class="sq heatmap-l4"></div>
+          More
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var grid = document.getElementById('heatmap');
+  if (!grid) return;
+  var weeks = 53, days = 7;
+  var frag = document.createDocumentFragment();
+  for (var w = 0; w < weeks; w++) {
+    for (var d = 0; d < days; d++) {
+      var seed = (w * 7 + d) * 31;
+      var r = Math.abs((Math.sin(seed) * 10000) % 1);
+      var level = r < 0.4 ? 0 : r < 0.65 ? 1 : r < 0.85 ? 2 : r < 0.95 ? 3 : 4;
+      var cell = document.createElement('div');
+      cell.className = 'heatmap-cell heatmap-l' + level;
+      cell.title = level + ' commits';
+      frag.appendChild(cell);
+    }
+  }
+  grid.appendChild(frag);
+})();
+</script>
+{{ end }}

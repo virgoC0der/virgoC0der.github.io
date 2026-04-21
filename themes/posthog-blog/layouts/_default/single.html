@@ -1,0 +1,118 @@
+{{ define "main" }}
+<div class="page-wrap">
+  <div class="breadcrumb mono">
+    <a href="{{ "/" | relLangURL }}">~</a> / <a href="{{ printf "/%s/" .Section | relLangURL }}">{{ .Section }}</a> / <strong>{{ path.BaseName .File.Path }}.md</strong>
+  </div>
+
+  <div class="post-detail">
+    <!-- TOC -->
+    <aside class="toc">
+      <div class="head">◊ table of contents</div>
+      <nav class="toc-list" id="toc">
+        {{ .TableOfContents }}
+      </nav>
+      <div class="share-box">
+        <div class="label mono">✦ share</div>
+        <div class="btns">
+          <button type="button" onclick="window.open('https://twitter.com/intent/tweet?url='+encodeURIComponent(location.href)+'&text='+encodeURIComponent(document.title), '_blank')">X</button>
+          <button type="button" onclick="navigator.clipboard && navigator.clipboard.writeText(location.href)">🔗</button>
+          <button type="button" onclick="window.print()">✎</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <article>
+      <div class="post-tags">
+        {{ with (index .Params.categories 0) }}<span class="chip" style="background:var(--yellow)">{{ . }}</span>{{ end }}
+        {{ range .Params.tags }}<span class="chip" style="background:var(--cream-warm)">#{{ . }}</span>{{ end }}
+      </div>
+      <h1 class="display">{{ .Title }}</h1>
+      {{ with .Params.title_en }}<div class="en-title">{{ . }}</div>{{ end }}
+
+      <div class="byline">
+        <div class="who">
+          {{ partial "mascot-mark.html" 28 }}
+          <div>
+            <strong>{{ .Site.Params.author.name | default "Billy" }}</strong>
+            <span class="handle">@virgoC0der</span>
+          </div>
+        </div>
+        <span class="mute">·</span>
+        <span>{{ .Date.Format "2006-01-02" }}</span>
+        <span class="mute">·</span>
+        <span>{{ math.Ceil (div (countwords .Content) 220.0) }} min read</span>
+        <span class="mute">·</span>
+        <span>{{ countwords .Content }} words</span>
+      </div>
+
+      <div class="cover-wrap">
+        {{ partial "post-cover.html" (dict "page" . "height" 240) }}
+      </div>
+
+      <div class="md">
+        {{ .Content }}
+      </div>
+
+      <!-- call-to-action -->
+      <div class="post-foot">
+        {{ partial "mascot.html" (dict "size" 90 "pose" "code" "animated" false) }}
+        <div style="flex:1">
+          <div class="t">觉得这篇有用？</div>
+          <div class="s">订阅 RSS 或去 GitHub 给 <code>go-mcp</code> 点个 ⭐</div>
+          <div class="ctas">
+            <a class="cta ink" href="{{ .Site.Params.github }}" target="_blank" rel="noopener">GitHub ⭐ ↗</a>
+            <a class="cta paper" href="{{ "/index.xml" | relLangURL }}">RSS 订阅 ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- prev/next -->
+      <div class="prev-next">
+        {{ with .PrevInSection }}
+        <a class="card" href="{{ .RelPermalink }}">
+          <div class="kicker">← prev</div>
+          <div class="title">{{ .Title }}</div>
+        </a>
+        {{ else }}<span></span>{{ end }}
+        {{ with .NextInSection }}
+        <a class="card next" href="{{ .RelPermalink }}">
+          <div class="kicker">next →</div>
+          <div class="title">{{ .Title }}</div>
+        </a>
+        {{ else }}<span></span>{{ end }}
+      </div>
+    </article>
+
+    <!-- META -->
+    <aside class="side-meta">
+      <div class="front-matter">
+        <div class="head">◊ front matter</div>
+        <div class="yaml">
+          <div><span class="k">title:</span> {{ path.BaseName .File.Path }}</div>
+          <div><span class="k">date:</span> {{ .Date.Format "2006-01-02" }}</div>
+          <div><span class="k">author:</span> {{ .Site.Params.author.name | default "Billy" }}</div>
+          <div><span class="k">words:</span> ~{{ div (countwords .Content) 1000 }}.{{ mod (div (countwords .Content) 100) 10 }}k</div>
+          {{ with .Params.tags }}
+          <div><span class="k">tags:</span></div>
+          <div style="padding-left:12px">
+            {{ range . }}<div>- {{ . }}</div>{{ end }}
+          </div>
+          {{ end }}
+          {{ with .Params.categories }}
+          <div><span class="k">categories:</span></div>
+          <div style="padding-left:12px">
+            {{ range . }}<div>- {{ . }}</div>{{ end }}
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      <div class="reading-progress">
+        <div class="label">✦ reading</div>
+        <div class="text">当前进度 — 翻到 0%，还需 ~10 分钟</div>
+        <div class="bar"><div></div></div>
+      </div>
+    </aside>
+  </div>
+</div>
+{{ end }}

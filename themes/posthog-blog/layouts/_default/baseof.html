@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="{{ or .Site.Language.LanguageCode .Site.Language.Lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ if .IsHome }}{{ .Site.Title }} — PostHog Edition{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
+  {{ with .Site.Params.description }}<meta name="description" content="{{ . }}">{{ end }}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  {{ $style := resources.Get "css/main.css" }}
+  <link rel="stylesheet" href="{{ $style.RelPermalink }}">
+
+  {{ with .OutputFormats.Get "rss" }}
+  <link rel="alternate" type="application/rss+xml" href="{{ .Permalink }}" title="{{ $.Site.Title }}">
+  {{ end }}
+</head>
+<body>
+  {{ partial "topbar.html" . }}
+  <main>
+    {{ block "main" . }}{{ end }}
+  </main>
+  {{ partial "footer.html" . }}
+  {{ partial "reading-progress.html" . }}
+</body>
+</html>

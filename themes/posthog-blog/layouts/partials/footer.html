@@ -1,0 +1,40 @@
+<footer class="site-foot">
+  <div class="wrap">
+    <div>
+      <div class="brand-row">
+        {{ partial "mascot.html" (dict "size" 56 "pose" "wave" "animated" false) }}
+        <div>
+          <div class="title">{{ .Site.Title }}</div>
+          <div class="info">built with Hugo · hosted on GitHub Pages</div>
+        </div>
+      </div>
+      <div class="quote-mono">
+        <span class="c">// </span>"First, solve the problem. Then, write the code."<br>
+        <span style="opacity:0.5">— John Johnson</span>
+      </div>
+    </div>
+    <div>
+      <div class="col-head">Pages</div>
+      <a href="{{ "/" | relLangURL }}">/~</a>
+      <a href="{{ "/posts/" | relLangURL }}">/posts</a>
+      <a href="{{ "/tags/" | relLangURL }}">/tags</a>
+      <a href="{{ "/about/" | relLangURL }}">/about</a>
+      <a href="{{ "/now/" | relLangURL }}">/now</a>
+    </div>
+    <div>
+      <div class="col-head">Elsewhere</div>
+      {{ with .Site.Params.github }}<a href="{{ . }}" target="_blank" rel="noopener">GitHub ↗</a>{{ end }}
+      {{ with .Site.Params.author.email }}<a href="mailto:{{ . }}">Email ↗</a>{{ end }}
+      <a href="{{ "/index.xml" | relLangURL }}">RSS ↗</a>
+    </div>
+    <div>
+      <div class="col-head">Colophon</div>
+      <div class="row">Inter + Fraunces + JetBrains Mono</div>
+      <div class="row">© {{ now.Format "2006" }} {{ .Site.Params.author.name }} ({{ "@virgoC0der" }})</div>
+    </div>
+  </div>
+  <div class="tag-strip">
+    <span>✦ made with ♥ and too much coffee · {{ .Site.Params.author.name }} ·  ♍ virgo edition</span>
+    <span>v0.3.1 · hugo</span>
+  </div>
+</footer>

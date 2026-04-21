@@ -1,0 +1,29 @@
+{{ define "main" }}
+<div class="page-wrap">
+  <div class="page-title-row">
+    <div class="kicker mono">~/{{ .Data.Singular }}/{{ .Title }} $ ls</div>
+    <h1 class="display">
+      {{ if eq .Data.Singular "tag" }}<span class="hl" style="background:var(--yellow)">#{{ .Title }}</span>
+      {{ else }}<span class="hl" style="background:var(--mint)">{{ .Title }}</span>
+      {{ end }}
+    </h1>
+    <p>{{ len .Pages }} {{ if gt (len .Pages) 1 }}posts{{ else }}post{{ end }} 属于这个 {{ .Data.Singular }}。</p>
+  </div>
+
+  <div class="posts-grid">
+    {{ range .Pages }}
+    <a class="post-card" href="{{ .RelPermalink }}">
+      {{ partial "post-cover.html" (dict "page" . "height" 140) }}
+      <div class="body">
+        <div class="date mono">{{ .Date.Format "2006-01-02" }} · {{ math.Ceil (div (countwords .Content) 220.0) }}m</div>
+        <h3 class="display">{{ .Title }}</h3>
+        <p>{{ .Description | default (.Summary | plainify | truncate 110) }}</p>
+        <div class="tags">
+          {{ range first 3 .Params.tags }}<span class="chip sm" style="background:var(--cream-warm)">#{{ . }}</span>{{ end }}
+        </div>
+      </div>
+    </a>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
