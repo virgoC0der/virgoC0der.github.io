@@ -32,18 +32,7 @@ jobs:
       - name: 生成静态页面
         env:
           HUGO_PARAMS_POSTHOG_APIKEY: ${{ secrets.POSTHOG_API_KEY }}
-        run: |
-          if [ -z "${HUGO_PARAMS_POSTHOG_APIKEY}" ]; then
-            echo "posthog key: EMPTY"
-          else
-            echo "posthog key: present (length=${#HUGO_PARAMS_POSTHOG_APIKEY})"
-            case "${HUGO_PARAMS_POSTHOG_APIKEY}" in
-              phc_*) echo "posthog key shape: looks like a Project API Key (good)" ;;
-              phx_*) echo "posthog key shape: looks like a Personal API Key (WRONG — needs Project key)" ;;
-              *)     echo "posthog key shape: unrecognized prefix" ;;
-            esac
-          fi
-          hugo --minify
+        run: hugo --minify
 
       - name: 发布到 GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
