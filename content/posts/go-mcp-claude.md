@@ -1,5 +1,6 @@
 ---
 title: "使用Go开发MCP并接入Claude Desktop：go-mcp库实践"
+description: "用开源 go-mcp 库从零搭建一个 MCP 服务，扩展 Claude Desktop 的能力边界——支持 HTTP / stdio 通信、工具注册、本地资源访问，附完整代码示例。"
 date: 2025-04-08T15:30:00+08:00
 draft: false
 tags: ["Go", "Claude", "MCP", "AI"]

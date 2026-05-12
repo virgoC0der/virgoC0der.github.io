@@ -3,8 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ if .IsHome }}{{ .Site.Title }} — PostHog Edition{{ else }}{{ .Title }} | {{ .Site.Title }}{{ end }}</title>
-  {{ with .Site.Params.description }}<meta name="description" content="{{ . }}">{{ end }}
+  {{/* --- SEO: title --- */}}
+  {{- $siteTitle := .Site.Title -}}
+  {{- $pageTitle := cond .IsHome $siteTitle (printf "%s | %s" .Title $siteTitle) -}}
+  <title>{{ $pageTitle }}</title>
+
+  {{/* --- SEO: description (page → summary → site) --- */}}
+  {{- $desc := "" -}}
+  {{- with .Params.description }}{{ $desc = . }}{{ end -}}
+  {{- if not $desc }}{{ with .Summary }}{{ $desc = . | plainify | truncate 160 }}{{ end }}{{ end -}}
+  {{- if not $desc }}{{ $desc = .Site.Params.description }}{{ end -}}
+  {{ with $desc }}<meta name="description" content="{{ . }}">{{ end }}
+
+  {{/* --- SEO: canonical --- */}}
+  <link rel="canonical" href="{{ .Permalink }}">
+
+  {{/* --- SEO: Open Graph --- */}}
+  <meta property="og:site_name" content="{{ $siteTitle }}">
+  <meta property="og:title" content="{{ cond .IsHome $siteTitle .Title }}">
+  {{ with $desc }}<meta property="og:description" content="{{ . }}">{{ end }}
+  <meta property="og:type" content="{{ cond (eq .Section "posts") "article" "website" }}">
+  <meta property="og:url" content="{{ .Permalink }}">
+  <meta property="og:locale" content="{{ replace (or .Site.Language.LanguageCode .Site.Language.Lang) "-" "_" }}">
+  {{- $ogImage := "" -}}
+  {{- with .Params.cover }}{{ $ogImage = . | absURL }}{{ end -}}
+  {{- if not $ogImage }}{{ with .Site.Params.ogImage }}{{ $ogImage = . | absURL }}{{ end }}{{ end -}}
+  {{ with $ogImage }}<meta property="og:image" content="{{ . }}">{{ end }}
+
+  {{/* --- SEO: Twitter Card --- */}}
+  <meta name="twitter:card" content="{{ cond (ne $ogImage "") "summary_large_image" "summary" }}">
+  <meta name="twitter:title" content="{{ cond .IsHome $siteTitle .Title }}">
+  {{ with $desc }}<meta name="twitter:description" content="{{ . }}">{{ end }}
+  {{ with $ogImage }}<meta name="twitter:image" content="{{ . }}">{{ end }}
+
+  {{/* --- SEO: JSON-LD structured data --- */}}
+  {{ if eq .Section "posts" }}
+    {{- $authorName := .Site.Params.author.name | default "Billy" -}}
+    {{- $authorURL := .Site.Params.author.link | default .Site.BaseURL -}}
+    {{- $ld := dict
+        "@context" "https://schema.org"
+        "@type" "BlogPosting"
+        "headline" .Title
+        "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00")
+        "dateModified" ((or .Lastmod .Date).Format "2006-01-02T15:04:05Z07:00")
+        "author" (dict "@type" "Person" "name" $authorName "url" $authorURL)
+        "mainEntityOfPage" .Permalink -}}
+    {{- with $desc }}{{ $ld = merge $ld (dict "description" .) }}{{ end -}}
+    {{- with $ogImage }}{{ $ld = merge $ld (dict "image" .) }}{{ end -}}
+    {{- with .Params.tags }}{{ $ld = merge $ld (dict "keywords" (delimit . ", ")) }}{{ end }}
+  <script type="application/ld+json">{{ $ld | jsonify (dict "indent" "  ") | safeJS }}</script>
+  {{ else if .IsHome }}
+    {{- $ld := dict
+        "@context" "https://schema.org"
+        "@type" "WebSite"
+        "name" $siteTitle
+        "url" .Site.BaseURL -}}
+    {{- with .Site.Params.description }}{{ $ld = merge $ld (dict "description" .) }}{{ end }}
+  <script type="application/ld+json">{{ $ld | jsonify (dict "indent" "  ") | safeJS }}</script>
+  {{ end }}
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

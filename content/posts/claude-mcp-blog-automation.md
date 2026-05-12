@@ -1,5 +1,6 @@
 ---
 title: "Claude+MCP一键生成博客：AI助力内容创作与自动化部署"
+description: "用 Claude 大语言模型搭配 MCP（Model Context Protocol），从内容生成到 GitHub 推送、Hugo 部署、Playwright 验证全链路打通，演示一键发布博客的完整自动化工作流。"
 date: 2025-03-31T10:00:00+08:00
 draft: false
 tags: ["AI", "Claude", "MCP", "自动化", "博客"]

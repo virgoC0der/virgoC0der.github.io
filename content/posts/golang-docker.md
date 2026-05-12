@@ -2,6 +2,7 @@
 date = '2025-03-27T11:32:53+08:00'
 draft = false
 title = '使用Docker构建高效的Golang开发环境：完整指南'
+description = '从零搭建容器化的 Go 开发环境：Dockerfile 多阶段构建、Docker Compose 编排、Air 热重载、CI/CD 集成实战，让团队彻底告别“在我机器上能跑”。'
 author = 'VirgoC0der'
 categories = ["Technical","Tutorial","Go"]
 tags = ["Go","Docker"]
