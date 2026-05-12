@@ -30,6 +30,8 @@ jobs:
         run: npm ci
 
       - name: 生成静态页面
+        env:
+          HUGO_PARAMS_POSTHOG_APIKEY: ${{ secrets.POSTHOG_API_KEY }}
         run: hugo --minify
 
       - name: 发布到 GitHub Pages

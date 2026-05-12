@@ -53,6 +53,10 @@ enableRobotsTXT = true
   description = "后端开发者 · Go / AI / MCP · 实验室笔记"
   github = "https://github.com/virgoC0der"
 
+  # PostHog: apiKey 通过 GitHub Actions secret POSTHOG_API_KEY 注入 (env: HUGO_PARAMS_POSTHOG_APIKEY)
+  [params.posthog]
+    apiHost = "https://us.i.posthog.com"
+
   [params.author]
     name = "Billy"
     email = "billychen826@gmail.com"
