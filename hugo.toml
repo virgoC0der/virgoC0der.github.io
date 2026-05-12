@@ -57,6 +57,11 @@ enableRobotsTXT = true
   [params.posthog]
     apiHost = "https://us.i.posthog.com"
 
+  [params.verification]
+    google = "kKkCsndLrVa65fMpiAGjlXx7HNvGMgmWgyyps_cGO7A"
+    # bing = ""
+    # baidu = ""
+
   [params.author]
     name = "Billy"
     email = "billychen826@gmail.com"

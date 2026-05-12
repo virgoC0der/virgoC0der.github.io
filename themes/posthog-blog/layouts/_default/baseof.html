@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  {{/* --- Webmaster verification --- */}}
+  {{ with .Site.Params.verification.google }}<meta name="google-site-verification" content="{{ . }}">{{ end }}
+  {{ with .Site.Params.verification.bing }}<meta name="msvalidate.01" content="{{ . }}">{{ end }}
+  {{ with .Site.Params.verification.baidu }}<meta name="baidu-site-verification" content="{{ . }}">{{ end }}
+
   {{/* --- SEO: title --- */}}
   {{- $siteTitle := .Site.Title -}}
   {{- $pageTitle := cond .IsHome $siteTitle (printf "%s | %s" .Title $siteTitle) -}}
