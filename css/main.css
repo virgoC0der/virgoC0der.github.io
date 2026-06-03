@@ -635,14 +635,16 @@ section { margin-bottom: 80px; }
 }
 .heatmap-wrap { overflow-x: auto; }
 .heatmap-inner {
+  --heatmap-cell-size: 12px;
+  --heatmap-gap: 3px;
   position: relative;
   padding-left: 30px;
-  width: 100%;
-  min-width: 720px;
+  width: max-content;
+  min-width: max-content;
 }
 .heatmap-months {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  gap: var(--heatmap-gap);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   color: var(--mute);
@@ -661,14 +663,13 @@ section { margin-bottom: 80px; }
 }
 .heatmap-grid {
   display: grid;
-  grid-template-columns: repeat(53, 1fr);
-  grid-template-rows: repeat(7, 1fr);
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
   grid-auto-flow: column;
-  gap: 2px;
-  aspect-ratio: 53 / 7;
-  width: 100%;
+  gap: var(--heatmap-gap);
 }
 .heatmap-cell {
+  width: var(--heatmap-cell-size);
+  height: var(--heatmap-cell-size);
   border-radius: 2px;
   border: 1px solid rgba(0,0,0,0.08);
   min-height: 0;
@@ -679,6 +680,15 @@ section { margin-bottom: 80px; }
 .heatmap-l2 { background: #7bc96f; }
 .heatmap-l3 { background: #239a3b; }
 .heatmap-l4 { background: #196127; }
+.heatmap-empty-cell { background: transparent; border-color: transparent; }
+.heatmap-unavailable {
+  display: grid;
+  min-height: 110px;
+  place-items: center;
+  color: var(--mute);
+  border: 1px dashed rgba(0,0,0,0.2);
+  border-radius: 6px;
+}
 
 .heatmap-foot {
   margin-top: 18px;
