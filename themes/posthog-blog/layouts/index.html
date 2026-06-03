@@ -175,6 +175,7 @@
   </section>
 
   <!-- GITHUB HEATMAP -->
+  {{ $githubContributions := site.Data.github_contributions }}
   <section>
     <div class="section-header">
       <div>
@@ -186,17 +187,37 @@
     <div class="heatmap-card">
       <div class="heatmap-wrap">
         <div class="heatmap-inner">
-          <div class="heatmap-months">
-            {{ range slice "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec" }}<span>{{ . }}</span>{{ end }}
-          </div>
-          <div class="heatmap-days">
-            <span>Mon</span><span>Wed</span><span>Fri</span>
-          </div>
-          <div class="heatmap-grid" id="heatmap"></div>
+          {{ if $githubContributions }}
+            {{ $weekCount := $githubContributions.weekCount }}
+            <div class="heatmap-months" style="grid-template-columns: repeat({{ $weekCount }}, var(--heatmap-cell-size));">
+              {{ range $githubContributions.months }}<span style="grid-column: {{ .column }};">{{ .label }}</span>{{ end }}
+            </div>
+            <div class="heatmap-days">
+              <span>Mon</span><span>Wed</span><span>Fri</span>
+            </div>
+            {{ $weekCount := $githubContributions.weekCount }}
+            <div class="heatmap-grid" style="grid-template-columns: repeat({{ $weekCount }}, var(--heatmap-cell-size));">
+              {{ range $githubContributions.weeks }}
+                {{ range .days }}
+                  {{ if .empty }}
+                    <div class="heatmap-cell heatmap-empty-cell" aria-hidden="true"></div>
+                  {{ else }}
+                    <div class="heatmap-cell heatmap-l{{ .level }}" title="{{ .count }} contributions on {{ .date }}" aria-label="{{ .count }} contributions on {{ .date }}"></div>
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+            </div>
+          {{ else }}
+            <div class="heatmap-unavailable mono">GitHub contribution data updates during deploy.</div>
+          {{ end }}
         </div>
       </div>
       <div class="heatmap-foot">
-        <span><strong>743</strong> contributions in the last year</span>
+        {{ if $githubContributions }}
+          <span><strong>{{ $githubContributions.totalContributions }}</strong> contributions from {{ $githubContributions.range.from }} to {{ $githubContributions.range.to }}</span>
+        {{ else }}
+          <span><strong>0</strong> contributions data updates during deploy</span>
+        {{ end }}
         <div class="heatmap-legend">
           Less
           <div class="sq heatmap-l0"></div>
@@ -210,25 +231,4 @@
     </div>
   </section>
 </div>
-
-<script>
-(function () {
-  var grid = document.getElementById('heatmap');
-  if (!grid) return;
-  var weeks = 53, days = 7;
-  var frag = document.createDocumentFragment();
-  for (var w = 0; w < weeks; w++) {
-    for (var d = 0; d < days; d++) {
-      var seed = (w * 7 + d) * 31;
-      var r = Math.abs((Math.sin(seed) * 10000) % 1);
-      var level = r < 0.4 ? 0 : r < 0.65 ? 1 : r < 0.85 ? 2 : r < 0.95 ? 3 : 4;
-      var cell = document.createElement('div');
-      cell.className = 'heatmap-cell heatmap-l' + level;
-      cell.title = level + ' commits';
-      frag.appendChild(cell);
-    }
-  }
-  grid.appendChild(frag);
-})();
-</script>
 {{ end }}

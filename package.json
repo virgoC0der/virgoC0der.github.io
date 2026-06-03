@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:github": "node scripts/github-contributions.js",
+    "test": "node --test scripts/*.test.js"
   },
   "repository": {
     "type": "git",
