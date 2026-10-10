@@ -1,0 +1,17 @@
+{{- /* Markdown image hook: keeps alt/title, adds intrinsic size (prevents layout shift) and lazy-loads all but the first image. */ -}}
+{{- $u := urls.Parse .Destination -}}
+{{- $src := $u.String -}}
+{{- $img := "" -}}
+{{- if not $u.IsAbs -}}
+  {{- with or (.PageInner.Resources.Get $u.Path) (resources.Get $u.Path) -}}
+    {{- $img = . -}}
+    {{- $src = .RelPermalink -}}
+    {{- with $u.RawQuery }}{{ $src = printf "%s?%s" $src . }}{{ end -}}
+    {{- with $u.Fragment }}{{ $src = printf "%s#%s" $src . }}{{ end -}}
+  {{- end -}}
+{{- end -}}
+<img src="{{ $src }}" alt="{{ .PlainText }}"
+  {{- with .Title }} title="{{ . }}"{{ end }}
+  {{- if and $img (eq $img.ResourceType "image") (ne $img.MediaType.SubType "svg") }} width="{{ $img.Width }}" height="{{ $img.Height }}"{{ end }}
+  {{- if gt .Ordinal 0 }} loading="lazy"{{ end }} decoding="async">
+{{- /**/ -}}

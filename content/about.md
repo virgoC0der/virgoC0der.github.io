@@ -4,9 +4,10 @@ date: 2023-10-27T10:00:00+08:00
 draft: false
 type: "about"
 layout: "single"
+description: "后端开发者，专注于可扩展系统和云原生应用。平时在 Go 里打滚，偶尔写 Python 和 Swift，沉迷于把 AI 工具塞到工作流的每个缝隙里。"
 ---
 
-# 👋 Hello, I'm virgoC0der!
+## 👋 Hello, I'm virgoC0der!
 
 ## 🚀 Backend Developer
 
