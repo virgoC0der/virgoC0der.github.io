@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /design-prototype/
 
-Sitemap: https://virgoc0der.github.io/sitemap.xml
+Sitemap: https://www.giantough.top/sitemap.xml
