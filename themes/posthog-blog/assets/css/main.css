@@ -1067,6 +1067,7 @@ section { margin-bottom: 80px; }
 
 .md img {
   max-width: 100%;
+  height: auto;
   border: 2px solid var(--line);
   border-radius: 8px;
   box-shadow: 5px 5px 0 var(--line);

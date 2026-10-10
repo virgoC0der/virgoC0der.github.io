@@ -1,0 +1,15 @@
+{{ define "main" }}
+<div class="page-wrap">
+  <div class="page-title-row">
+    <div class="kicker mono">~ $ cat page.md → <strong>No such file or directory</strong></div>
+    <h1 class="display">404 · 页面不存在</h1>
+    <p>链接可能已经失效或者拼错了。可以回到首页，或者看看最近的文章：</p>
+  </div>
+  <ul class="md">
+    {{ range first 5 (where .Site.RegularPages "Section" "posts") }}
+    <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+    {{ end }}
+  </ul>
+  <p class="md"><a href="{{ "/" | relLangURL }}">← 回到首页</a> · <a href="{{ "/posts/" | relLangURL }}">全部文章</a></p>
+</div>
+{{ end }}

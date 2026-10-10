@@ -53,6 +53,10 @@ enableRobotsTXT = true
   description = "后端开发者 · Go / AI / MCP · 实验室笔记"
   github = "https://github.com/virgoC0der"
   ogImage = "og-image.png"
+  # X / Twitter handle (no @) → twitter:site / twitter:creator + Person.sameAs
+  twitter = "CoderVirgo"
+  # Longer meta description used only on the home page (SERP snippet); visible tagline stays params.description
+  homeDescription = "Billy 的技术博客：一名后端工程师记录 Go、AI agent、MCP、RAG 和自动化工作流的实战笔记与踩坑记录。"
 
   # PostHog: apiKey 通过 GitHub Actions secret POSTHOG_API_KEY 注入 (env: HUGO_PARAMS_POSTHOG_APIKEY)
   [params.posthog]

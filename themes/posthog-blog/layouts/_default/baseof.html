@@ -13,62 +13,115 @@
   {{ with .Site.Params.verification.bing }}<meta name="msvalidate.01" content="{{ . }}">{{ end }}
   {{ with .Site.Params.verification.baidu }}<meta name="baidu-site-verification" content="{{ . }}">{{ end }}
 
-  {{/* --- SEO: title --- */}}
+  {{/* --- SEO: shared values --- */}}
   {{- $siteTitle := .Site.Title -}}
-  {{- $pageTitle := cond .IsHome $siteTitle (printf "%s | %s" .Title $siteTitle) -}}
+  {{- $isPost := and .IsPage (eq .Section "posts") -}}
+  {{- $lang := or .Site.Language.LanguageCode .Site.Language.Lang -}}
+  {{- $authorName := .Site.Params.author.name | default "Billy" -}}
+  {{- $authorURL := .Site.Params.author.link | default .Site.BaseURL -}}
+  {{- $sameAs := slice -}}
+  {{- with .Site.Params.github }}{{ $sameAs = $sameAs | append . }}{{ end -}}
+  {{- with .Site.Params.twitter }}{{ $sameAs = $sameAs | append (printf "https://x.com/%s" .) }}{{ end -}}
+
+  {{/* --- SEO: title (home gets the tagline so the SERP title says what the site is) --- */}}
+  {{- $pageTitle := printf "%s | %s" .Title $siteTitle -}}
+  {{- if .IsHome }}{{ $pageTitle = $siteTitle }}{{ with .Site.Params.description }}{{ $pageTitle = printf "%s | %s" $siteTitle . }}{{ end }}{{ end -}}
   <title>{{ $pageTitle }}</title>
 
-  {{/* --- SEO: description (page → summary → site) --- */}}
+  {{/* --- SEO: description (page → summary → per-kind fallback → site) --- */}}
   {{- $desc := "" -}}
   {{- with .Params.description }}{{ $desc = . }}{{ end -}}
-  {{- if not $desc }}{{ with .Summary }}{{ $desc = . | plainify | truncate 160 }}{{ end }}{{ end -}}
+  {{- if and (not $desc) .IsHome }}{{ with .Site.Params.homeDescription }}{{ $desc = . }}{{ end }}{{ end -}}
+  {{- if and (not $desc) .IsPage }}{{ with .Summary }}{{ $desc = . | plainify | truncate 160 }}{{ end }}{{ end -}}
+  {{- if and (not $desc) (eq .Kind "section") (eq .Section "posts") }}{{ $desc = "Billy 的全部技术文章：Go 后端、AI agent、MCP、RAG 与自动化工作流，都是踩过的坑和学到的事。" }}{{ end -}}
+  {{- if and (not $desc) (eq .Kind "term") }}{{ $desc = printf "「%s」相关的 %d 篇文章 · %s" .Title (len .Pages) $siteTitle }}{{ end -}}
+  {{- if and (not $desc) (eq .Kind "taxonomy") }}{{ $desc = printf "%s 的全部%s，按主题浏览 Go、AI、MCP 等文章。" $siteTitle (cond (eq .Data.Plural "tags") "标签" "分类") }}{{ end -}}
   {{- if not $desc }}{{ $desc = .Site.Params.description }}{{ end -}}
   {{ with $desc }}<meta name="description" content="{{ . }}">{{ end }}
 
-  {{/* --- SEO: canonical --- */}}
-  <link rel="canonical" href="{{ .Permalink }}">
+  {{/* --- SEO: canonical + feed --- */}}
+  {{ if ne .Kind "404" }}<link rel="canonical" href="{{ .Permalink }}">{{ end }}
+  {{ with .OutputFormats.Get "rss" }}<link rel="alternate" type="application/rss+xml" href="{{ .Permalink }}" title="{{ $.Site.Title }}">
+  {{ else }}{{ with .Site.Home.OutputFormats.Get "rss" }}<link rel="alternate" type="application/rss+xml" href="{{ .Permalink }}" title="{{ $.Site.Title }}">{{ end }}{{ end }}
+
+  {{/* --- SEO: share image (page-bundle cover → site default), with real pixel size when known --- */}}
+  {{- $ogImage := "" -}}{{- $ogW := 0 -}}{{- $ogH := 0 -}}
+  {{- with .Params.cover -}}
+    {{- $ogImage = . | absURL -}}
+    {{- with $.Resources.GetMatch (path.Base .) }}{{ if in (slice "image") .ResourceType }}{{ $ogW = .Width }}{{ $ogH = .Height }}{{ end }}{{ end -}}
+  {{- end -}}
+  {{- if not $ogImage }}{{ with .Site.Params.ogImage }}{{ $ogImage = . | absURL }}{{ $ogW = 1200 }}{{ $ogH = 630 }}{{ end }}{{ end -}}
 
   {{/* --- SEO: Open Graph --- */}}
   <meta property="og:site_name" content="{{ $siteTitle }}">
   <meta property="og:title" content="{{ cond .IsHome $siteTitle .Title }}">
   {{ with $desc }}<meta property="og:description" content="{{ . }}">{{ end }}
-  <meta property="og:type" content="{{ cond (eq .Section "posts") "article" "website" }}">
+  <meta property="og:type" content="{{ cond $isPost "article" "website" }}">
   <meta property="og:url" content="{{ .Permalink }}">
-  <meta property="og:locale" content="{{ replace (or .Site.Language.LanguageCode .Site.Language.Lang) "-" "_" }}">
-  {{- $ogImage := "" -}}
-  {{- with .Params.cover }}{{ $ogImage = . | absURL }}{{ end -}}
-  {{- if not $ogImage }}{{ with .Site.Params.ogImage }}{{ $ogImage = . | absURL }}{{ end }}{{ end -}}
-  {{ with $ogImage }}<meta property="og:image" content="{{ . }}">{{ end }}
+  <meta property="og:locale" content="{{ replace $lang "-" "_" }}">
+  {{ with $ogImage }}<meta property="og:image" content="{{ . }}">
+  <meta property="og:image:alt" content="{{ cond $.IsHome $siteTitle $.Title }}">{{ end }}
+  {{ if gt $ogW 0 }}<meta property="og:image:width" content="{{ $ogW }}">
+  <meta property="og:image:height" content="{{ $ogH }}">{{ end }}
+  {{ if $isPost }}
+  <meta property="article:published_time" content="{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}">
+  <meta property="article:modified_time" content="{{ (or .Lastmod .Date).Format "2006-01-02T15:04:05Z07:00" }}">
+  <meta property="article:author" content="{{ $authorURL }}">
+  {{ range .Params.tags }}<meta property="article:tag" content="{{ . }}">
+  {{ end }}
+  {{ end }}
 
-  {{/* --- SEO: Twitter Card --- */}}
+  {{/* --- SEO: Twitter / X Card --- */}}
   <meta name="twitter:card" content="{{ cond (ne $ogImage "") "summary_large_image" "summary" }}">
+  {{ with .Site.Params.twitter }}<meta name="twitter:site" content="@{{ . }}">
+  <meta name="twitter:creator" content="@{{ . }}">{{ end }}
   <meta name="twitter:title" content="{{ cond .IsHome $siteTitle .Title }}">
   {{ with $desc }}<meta name="twitter:description" content="{{ . }}">{{ end }}
-  {{ with $ogImage }}<meta name="twitter:image" content="{{ . }}">{{ end }}
+  {{ with $ogImage }}<meta name="twitter:image" content="{{ . }}">
+  <meta name="twitter:image:alt" content="{{ cond $.IsHome $siteTitle $.Title }}">{{ end }}
+
+  {{/* --- SEO: robots (keep error pages out of the index) --- */}}
+  {{ if eq .Kind "404" }}<meta name="robots" content="noindex, follow">{{ end }}
 
   {{/* --- SEO: JSON-LD structured data --- */}}
-  {{ if eq .Section "posts" }}
-    {{- $authorName := .Site.Params.author.name | default "Billy" -}}
-    {{- $authorURL := .Site.Params.author.link | default .Site.BaseURL -}}
+  {{- $person := dict "@type" "Person" "@id" (printf "%s#person" .Site.BaseURL) "name" $authorName "url" $authorURL -}}
+  {{- with $sameAs }}{{ $person = merge $person (dict "sameAs" .) }}{{ end -}}
+  {{ if $isPost }}
     {{- $ld := dict
         "@context" "https://schema.org"
         "@type" "BlogPosting"
         "headline" .Title
+        "url" .Permalink
+        "inLanguage" $lang
         "datePublished" (.Date.Format "2006-01-02T15:04:05Z07:00")
         "dateModified" ((or .Lastmod .Date).Format "2006-01-02T15:04:05Z07:00")
-        "author" (dict "@type" "Person" "name" $authorName "url" $authorURL)
-        "mainEntityOfPage" .Permalink -}}
+        "author" $person
+        "publisher" $person
+        "isPartOf" (dict "@type" "WebSite" "@id" (printf "%s#website" .Site.BaseURL) "name" $siteTitle "url" .Site.BaseURL)
+        "mainEntityOfPage" (dict "@type" "WebPage" "@id" .Permalink) -}}
+    {{- with .Params.title_en }}{{ $ld = merge $ld (dict "alternativeHeadline" .) }}{{ end -}}
     {{- with $desc }}{{ $ld = merge $ld (dict "description" .) }}{{ end -}}
-    {{- with $ogImage }}{{ $ld = merge $ld (dict "image" .) }}{{ end -}}
-    {{- with .Params.tags }}{{ $ld = merge $ld (dict "keywords" (delimit . ", ")) }}{{ end }}
-  <script type="application/ld+json">{{ $ld | jsonify (dict "indent" "  ") | safeJS }}</script>
-  {{ else if .IsHome }}
-    {{- $ld := dict
+    {{- with $ogImage }}{{ $ld = merge $ld (dict "image" (slice .)) }}{{ end -}}
+    {{- with .Params.tags }}{{ $ld = merge $ld (dict "keywords" (delimit . ", ")) }}{{ end -}}
+    {{- $crumbs := dict
         "@context" "https://schema.org"
+        "@type" "BreadcrumbList"
+        "itemListElement" (slice
+          (dict "@type" "ListItem" "position" 1 "name" $siteTitle "item" .Site.BaseURL)
+          (dict "@type" "ListItem" "position" 2 "name" "Posts" "item" (absURL "posts/"))
+          (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink)) }}
+  <script type="application/ld+json">{{ $ld | jsonify (dict "indent" "  ") | safeJS }}</script>
+  <script type="application/ld+json">{{ $crumbs | jsonify (dict "indent" "  ") | safeJS }}</script>
+  {{ else if .IsHome }}
+    {{- $site := dict
         "@type" "WebSite"
+        "@id" (printf "%s#website" .Site.BaseURL)
         "name" $siteTitle
-        "url" .Site.BaseURL -}}
-    {{- with .Site.Params.description }}{{ $ld = merge $ld (dict "description" .) }}{{ end }}
+        "url" .Site.BaseURL
+        "inLanguage" $lang
+        "author" (dict "@id" (printf "%s#person" .Site.BaseURL)) -}}
+    {{- with or .Site.Params.homeDescription .Site.Params.description }}{{ $site = merge $site (dict "description" .) }}{{ end -}}
+    {{- $ld := dict "@context" "https://schema.org" "@graph" (slice $site $person) }}
   <script type="application/ld+json">{{ $ld | jsonify (dict "indent" "  ") | safeJS }}</script>
   {{ end }}
 
@@ -79,9 +132,6 @@
   {{ $style := resources.Get "css/main.css" }}
   <link rel="stylesheet" href="{{ $style.RelPermalink }}">
 
-  {{ with .OutputFormats.Get "rss" }}
-  <link rel="alternate" type="application/rss+xml" href="{{ .Permalink }}" title="{{ $.Site.Title }}">
-  {{ end }}
 
   {{ if and hugo.IsProduction .Site.Params.posthog.apiKey }}
   {{ $host := default "https://us.i.posthog.com" .Site.Params.posthog.apiHost }}
