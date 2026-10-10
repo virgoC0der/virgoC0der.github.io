@@ -18,4 +18,15 @@
 {{- else if in $tags "Go" -}}{{- $kind = "terminal" -}}{{- $color = "var(--yellow)" -}}
 {{- end -}}
 
+{{- /* A page-bundle image named in front matter `cover` wins over the auto art */ -}}
+{{- $img := false -}}
+{{- with $page.Params.cover -}}{{- $img = $page.Resources.GetMatch (path.Base .) -}}{{- end -}}
+{{- if $img -}}
+  {{- if ge $height 240 -}}
+<img src="{{ $img.RelPermalink }}" alt="{{ $page.Title }}" width="{{ $img.Width }}" height="{{ $img.Height }}" style="width:100%;height:auto;display:block" decoding="async">
+  {{- else -}}
+<img src="{{ $img.RelPermalink }}" alt="{{ $page.Title }}" width="{{ $img.Width }}" height="{{ $img.Height }}" style="width:100%;height:{{ $height }}px;object-fit:cover;display:block" loading="lazy" decoding="async">
+  {{- end -}}
+{{- else -}}
 {{ partial "cover-art.html" (dict "kind" $kind "color" $color "height" $height) }}
+{{- end -}}
