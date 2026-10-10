@@ -1,4 +1,32 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AI on Billy's Blog</title><link>https://virgoc0der.github.io/tags/ai/</link><description>Recent content in AI on Billy's Blog</description><generator>Hugo</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Wed, 05 Nov 2025 10:00:00 +0800</lastBuildDate><atom:link href="https://virgoc0der.github.io/tags/ai/index.xml" rel="self" type="application/rss+xml"/><item><title>RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考</title><link>https://virgoc0der.github.io/posts/rag-graphrag-context/</link><pubDate>Wed, 05 Nov 2025 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoc0der.github.io/posts/rag-graphrag-context/</guid><description>&lt;h2 id="rag-基础原理">RAG 基础原理&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AI on Billy's Blog</title><link>https://virgoc0der.github.io/tags/ai/</link><description>Recent content in AI on Billy's Blog</description><generator>Hugo</generator><language>zh-CN</language><managingEditor>billychen826@gmail.com (Billy)</managingEditor><webMaster>billychen826@gmail.com (Billy)</webMaster><lastBuildDate>Sat, 10 Oct 2026 16:35:00 +0800</lastBuildDate><atom:link href="https://virgoc0der.github.io/tags/ai/index.xml" rel="self" type="application/rss+xml"/><item><title>我让 AI 每天自动出一条 90 秒视频：AI 早报流水线拆解，成本和翻车都写上</title><link>https://virgoc0der.github.io/posts/ai-daily-pipeline/</link><pubDate>Sat, 10 Oct 2026 16:35:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoc0der.github.io/posts/ai-daily-pipeline/</guid><description>&lt;p>这周我搭了一条流水线：每天早上 10:02 自动跑一次，产出一份 AI 早报文字简报和一条 88 秒左右的中文讲解视频，然后投到 B 站。今天这期在这里：&lt;a href="https://www.bilibili.com/video/BV1pXpY6xE1k/">AI 早报 10.10&lt;/a>。&lt;/p>
+&lt;p>&lt;img src="cover-intro.png" alt="AI 早报 10.10 片头">&lt;/p>
+&lt;p>起因是歸藏（@op7418）10 月 8 日公开了他做「AI 早报 + 讲解视频」的整套提示词（&lt;a href="https://x.com/op7418/status/2108148604447883464">原帖&lt;/a>），第二天又把「newsletter 转 2 分钟视频」做成了可以直接装的 bot 模板（&lt;a href="https://x.com/op7418/status/2108566650350170411">原帖&lt;/a>）。我照着搭了一套，样片跑通了。但跑一期 demo 和每天稳定出片是两回事，后者要回答这几个问题：&lt;/p>
+&lt;ul>
+&lt;li>采集、写稿、渲染、发布，各自交给谁？&lt;/li>
+&lt;li>怎么保证视频里的数字没编？&lt;/li>
+&lt;li>一期花多少钱、多长时间？&lt;/li>
+&lt;li>出错了是悄悄发一条烂片，还是停下来？&lt;/li>
+&lt;/ul>
+&lt;p>下面按这几个问题拆。文中的耗时、轮数、成本和退出码都来自流水线自己落盘的日志，出处列在文末。&lt;/p>
+&lt;h2 id="整体架构">整体架构&lt;/h2>
+&lt;p>&lt;img src="architecture.webp" alt="AI 早报自动流水线架构：编排层采集核对写简报，渲染层用 Claude Code 出旁白和视频并审片，交付层私聊验收、B 站自动投稿、X 由我自己点发布">&lt;/p>
+&lt;p>图里是三层，真正干活的是前两层。拆成两层，是因为两边能拿到的东西不一样。&lt;/p>
+&lt;p>Claude Code 跑在一台云端 Linux 机器上，那里没有 X 的连接器，读不到我的收藏和推文。编排层是一个常驻的 Grok Bot 助手，手上有 X 连接器、能联网核对官方页，也有定时任务。所以采集、核对、写简报都归它，Claude Code 只拿 &lt;code>brief.md&lt;/code> 干活，而且被要求把它当成&lt;strong>唯一事实来源&lt;/strong>。&lt;/p>
+&lt;p>这样分还有个好处：渲染那一层不联网找资料，也就没有机会自己「补」新闻进来。prompt 第一句写的就是：&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>你在 box 上非交互运行，没人能回答问题；不要发任何消息/帖子，不要访问社交账号。
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="目录和入口">目录和入口&lt;/h2>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>/workspace/ai-daily/
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── RUNBOOK.md 全流程手册
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── run_daily.sh 每日入口
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── prompts/video.md 首次搭建用的完整 prompt（engine 不存在时）
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── prompts/daily.md 日常复用 prompt（engine 已存在时）
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>├── engine/ 可复用的视频工程
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── make_video.sh 一键 8 步
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── DIRECTION.md 影片方向（镜头表每天自动重写）
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ ├── tools/ build_content.py / tts.py / qa_layout.mjs ...
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>│ └── src/shots/news.jsx 所有版式
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>└── out/&amp;lt;Y&amp;gt;/ 每期的 brief、sources、items、narration、mp4、keyframes、qa-report
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;code>run_daily.sh&lt;/code> 不长，核心就几段。先检查编排层有没有把简报写好，没有就直接退出，不让 Claude Code 凭空发挥：&lt;/p></description></item><item><title>RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考</title><link>https://virgoc0der.github.io/posts/rag-graphrag-context/</link><pubDate>Wed, 05 Nov 2025 10:00:00 +0800</pubDate><author>billychen826@gmail.com (Billy)</author><guid>https://virgoc0der.github.io/posts/rag-graphrag-context/</guid><description>&lt;h2 id="rag-基础原理">RAG 基础原理&lt;/h2>
 &lt;h3 id="什么是-rag">什么是 RAG&lt;/h3>
 &lt;p>RAG (Retrieval-Augmented Generation) 检索增强生成，是一种结合了信息检索和大语言模型生成能力的技术范式。其核心思想是：&lt;/p>
 &lt;div class="highlight">&lt;pre tabindex="0" style="color:#c0caf5;background-color:#1a1b26;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-text" data-lang="text">&lt;span style="display:flex;">&lt;span>用户查询 → 检索相关文档 → 将文档作为上下文 → LLM 生成答案
