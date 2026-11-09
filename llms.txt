@@ -1,0 +1,29 @@
+# Billy's Blog
+
+> Billy Chen（世轩），后端工程师，写 AI 工程实践和一条每天自动运行的 AI 早报视频流水线。
+
+Billy Chen（世轩）的技术博客：一名后端工程师记录 Go、AI agent、MCP、RAG 和自动化工作流的实战笔记与踩坑记录。
+
+- 作者：Billy Chen（世轩）
+- 网站：https://www.giantough.top/
+- X：https://x.com/CoderVirgo
+- GitHub：https://github.com/virgoC0der
+- RSS：https://www.giantough.top/index.xml
+- Sitemap：https://www.giantough.top/sitemap.xml
+
+## Posts
+
+- [我让 AI 每天自动出一条 90 秒视频：AI 早报流水线拆解，成本和翻车都写上](https://www.giantough.top/posts/ai-daily-pipeline/): 一个常驻助手负责采集和核对，Claude Code 负责渲染，每天 10:02 出一期 AI 早报简报 + 90 秒讲解视频并投稿 B 站。这篇写清楚架构、每步命令、真实耗时和 API 成本，以及前两期踩过的坑。 (2026-10-10)
+- [RAG 技术深度解析：从基础到 GraphRAG，以及大 Context 时代的思考](https://www.giantough.top/posts/rag-graphrag-context/): 从 RAG 的基础原理讲起，聊聊 GraphRAG、Graphiti 这些进化版本，以及在 1M context 时代，RAG 到底会不会被淘汰。 (2025-11-05)
+- [使用Go实现业务的多国本土化适配方案](https://www.giantough.top/posts/go-i18n-localization/): 面向 Go 后端开发者的国际化（i18n）与本土化（l10n）实战：对比 go-i18n、gotext 等主流库选型，讲透多语言、多地区、多货币业务的架构设计与落地。 (2025-05-08)
+- [使用Go实现业务多国本土化：策略模式、依赖注入与i18n集成实战](https://www.giantough.top/posts/go-multilingual-localization/): 在 Go 项目里用策略模式 + 工厂模式封装各国业务差异，结合 Wire 依赖注入和 i18n 库构建可扩展的多国本土化框架，附国际化支付系统完整案例。 (2025-05-08)
+- [使用Go开发MCP并接入Claude Desktop：go-mcp库实践](https://www.giantough.top/posts/go-mcp-claude/): 用开源 go-mcp 库从零搭建一个 MCP 服务，扩展 Claude Desktop 的能力边界——支持 HTTP / stdio 通信、工具注册、本地资源访问，附完整代码示例。 (2025-04-08)
+- [Go语言入门指南：从零开始的Go编程之旅](https://www.giantough.top/posts/golang-beginner-guide/): 为初学者打造的全面Go语言入门教程，包含环境搭建、基础语法和实用示例 (2025-03-31)
+- [Claude+MCP一键生成博客：AI助力内容创作与自动化部署](https://www.giantough.top/posts/claude-mcp-blog-automation/): 用 Claude 大语言模型搭配 MCP（Model Context Protocol），从内容生成到 GitHub 推送、Hugo 部署、Playwright 验证全链路打通，演示一键发布博客的完整自动化工作流。 (2025-03-31)
+- [使用Docker构建高效的Golang开发环境：完整指南](https://www.giantough.top/posts/golang-docker/): 从零搭建容器化的 Go 开发环境：Dockerfile 多阶段构建、Docker Compose 编排、Air 热重载、CI/CD 集成实战，让团队彻底告别“在我机器上能跑”。 (2025-03-27)
+- [在Mac Mini上部署私有化大语言模型](https://www.giantough.top/posts/first/): 手把手教你使用Ollama+Open WebUI在macOS系统搭建本地LLM服务 (2025-03-24)
+
+## Pages
+
+- [Now](https://www.giantough.top/now/): What Billy is up to right now — inspired by Derek Sivers' /now page.
+- [About Me](https://www.giantough.top/about/): 后端开发者，专注于可扩展系统和云原生应用。平时在 Go 里打滚，偶尔写 Python 和 Swift，沉迷于把 AI 工具塞到工作流的每个缝隙里。
