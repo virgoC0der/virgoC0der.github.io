@@ -1,7 +1,7 @@
 {{ define "main" }}
 <div class="page-wrap">
   <div class="breadcrumb mono">
-    <a href="{{ "/" | relLangURL }}">~</a> / <a href="{{ printf "/%s/" .Section | relLangURL }}">{{ .Section }}</a> / <strong>{{ path.BaseName .File.Path }}.md</strong>
+    <a href="{{ "/" | relLangURL }}">~</a> / <a href="{{ printf "/%s/" .Section | relLangURL }}">{{ .Section }}</a> / <strong>{{ .Title }}</strong>
   </div>
 
   <div class="post-detail">
@@ -89,7 +89,7 @@
       <div class="front-matter">
         <div class="head">◊ front matter</div>
         <div class="yaml">
-          <div><span class="k">title:</span> {{ path.BaseName .File.Path }}</div>
+          <div><span class="k">title:</span> {{ .Title }}</div>
           <div><span class="k">date:</span> {{ .Date.Format "2006-01-02" }}</div>
           <div><span class="k">author:</span> {{ .Site.Params.author.name | default "Billy" }}</div>
           <div><span class="k">words:</span> ~{{ div (countwords .Content) 1000 }}.{{ mod (div (countwords .Content) 100) 10 }}k</div>
