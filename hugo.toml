@@ -6,6 +6,24 @@ theme = 'posthog-blog'
 
 enableRobotsTXT = true
 
+# /llms.txt：给 AI 搜索/LLM 读的站点索引（由 layouts/index.llms.txt 从内容生成）
+[outputFormats]
+  [outputFormats.llms]
+    mediaType = "text/plain"
+    baseName = "llms"
+    isPlainText = true
+    notAlternative = true
+
+[outputs]
+  home = ["HTML", "RSS", "llms"]
+
+# static/design-prototype/ 是 Claude Design 导出的设计原型，不发布到线上
+[module]
+  [[module.mounts]]
+    source = "static"
+    target = "static"
+    excludeFiles = ["design-prototype", "design-prototype/**"]
+
 [taxonomies]
   tag = "tags"
   category = "categories"
@@ -56,7 +74,7 @@ enableRobotsTXT = true
   # X / Twitter handle (no @) → twitter:site / twitter:creator + Person.sameAs
   twitter = "CoderVirgo"
   # Longer meta description used only on the home page (SERP snippet); visible tagline stays params.description
-  homeDescription = "Billy 的技术博客：一名后端工程师记录 Go、AI agent、MCP、RAG 和自动化工作流的实战笔记与踩坑记录。"
+  homeDescription = "Billy Chen（世轩）的技术博客：一名后端工程师记录 Go、AI agent、MCP、RAG 和自动化工作流的实战笔记与踩坑记录。"
 
   # PostHog: apiKey 通过 GitHub Actions secret POSTHOG_API_KEY 注入 (env: HUGO_PARAMS_POSTHOG_APIKEY)
   [params.posthog]
@@ -69,6 +87,11 @@ enableRobotsTXT = true
 
   [params.author]
     name = "Billy"
+    # 全名：只用于 meta / JSON-LD / llms.txt（页面上显示的仍是 name）
+    fullName = "Billy Chen"
+    alternateName = "世轩"
+    # 一句话作者介绍：用于 Person JSON-LD 和 /llms.txt
+    bio = "Billy Chen（世轩），后端工程师，写 AI 工程实践和一条每天自动运行的 AI 早报视频流水线。"
     email = "billychen826@gmail.com"
     link = "https://github.com/virgoC0der"
 

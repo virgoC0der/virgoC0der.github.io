@@ -1,0 +1,29 @@
+{{- $author := .Site.Params.author -}}
+{{- $name := $author.fullName | default $author.name -}}
+# {{ .Site.Title }}
+
+> {{ with $author.bio }}{{ . }}{{ else }}{{ $name }} 的技术博客。{{ end }}
+
+{{ with .Site.Params.homeDescription }}{{ . }}{{ end }}
+
+- 作者：{{ $name }}{{ with $author.alternateName }}（{{ . }}）{{ end }}
+- 网站：{{ .Site.BaseURL }}
+{{- with .Site.Params.twitter }}
+- X：https://x.com/{{ . }}
+{{- end }}
+{{- with .Site.Params.github }}
+- GitHub：{{ . }}
+{{- end }}
+- RSS：{{ "index.xml" | absURL }}
+- Sitemap：{{ "sitemap.xml" | absURL }}
+
+## Posts
+{{ range (where .Site.RegularPages "Section" "posts").ByDate.Reverse }}
+{{- $summary := .Params.description | default (.Summary | plainify | truncate 160) }}
+- [{{ .Title }}]({{ .Permalink }}): {{ replaceRE `\s+` " " $summary }} ({{ .Date.Format "2006-01-02" }})
+{{- end }}
+
+## Pages
+{{ range where .Site.RegularPages "Section" "ne" "posts" }}
+- [{{ .Title }}]({{ .Permalink }}){{ with .Params.description }}: {{ . }}{{ end }}
+{{- end }}
